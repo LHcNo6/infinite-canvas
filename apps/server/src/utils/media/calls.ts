@@ -4,7 +4,22 @@ import { join } from "node:path";
 import { resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
 
 export type CallScope = { canvasId: string; nodeId: string; callId: string; startedAt: string };
-export type MediaCall = { id: string; type: "image" | "video"; providerId: string; modelId: string; startedAt: string; durationMs: number; status: "preparing" | "running" | "succeeded" | "failed" | "cancelled" | "unknown"; detail: string; endedAt?: string; results?: { path: string; mimeType: string }[] };
+export type MediaCall = { id: string; type: "image" | "video"; providerId: string; modelId: string; startedAt: string; durationMs: number; status: "preparing" | "running" | "succeeded" | "failed" | "cancelled" | "unknown"; detail: string; endedAt?: string; results?: { path: string; mimeType: string }[];
+  upstreamTaskId?: string;
+  upstreamStatus?: string;
+  lastQueriedAt?: string;
+  queryDetail?: string;
+  queryError?: boolean;
+  outputDirectory?: string;
+  recovery?: { outputDirectory: string; assets: Extract<MediaAsset, { type: "url" }>[] };
+};
+
+export async function load(cwd: string, scope: Pick<CallScope, "canvasId" | "nodeId">, callId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(callId)) throw new Error("模型调用标识无效");
+  const dir = await directory(cwd, scope);
+  const path = (await resolveWorkspacePath(cwd, `.toonflow/modelCalls/${dir.split(/[\\/]/).at(-1)}/${callId}.json`)).path;
+  return JSON.parse(await readFile(path, "utf8")) as MediaCall;
+}
 
 async function directory(cwd: string, scope: Pick<CallScope, "canvasId" | "nodeId">, create = false) {
   const hash = createHash("sha256").update(JSON.stringify([scope.canvasId, scope.nodeId])).digest("hex");

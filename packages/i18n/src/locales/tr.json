@@ -3277,5 +3277,16 @@
   "正在调用 {0}": "{0} çağrılıyor",
   "调用已结束": "Çağrılar sona erdi",
   "{0} 次失败": "{0} başarısız",
-  "{0} 次中断": "{0} kesintiye uğradı"
+  "{0} 次中断": "{0} kesintiye uğradı",
+  "模型调用标识无效": "Geçersiz model çağrısı kimliği",
+  "该供应商尚未支持查询原任务": "Bu sağlayıcı mevcut görevleri sorgulamayı desteklemiyor",
+  "查询原任务失败": "Mevcut görev sorgulanamadı",
+  "上游任务 ID 无效": "Geçersiz sağlayıcı görev kimliği",
+  "上游已返回成品，正在下载保存": "Sağlayıcı sonucu döndürdü; indiriliyor ve kaydediliyor",
+  "上游已返回成品，本地下载或保存未完成；可在模型调用记录中重试下载，不会重新生成。\n": "上游已返回成品，本地下载或保存未完成；可在模型调用记录中重试下载，不会重新生成。\n",
+  "该调用仍在处理中，请等待完成": "Bu çağrı hâlâ işleniyor. Lütfen tamamlanmasını bekleyin",
+  "没有可查询的上游任务 ID": "Sorgulanabilecek sağlayıcı görev kimliği yok",
+  "原任务未返回可下载的成品地址": "Mevcut görev indirilebilir bir sonuç adresi döndürmedi",
+  "上游已完成，点击重新下载保存成品；不会重新生成。": "Üretim tamamlandı. Sonucu indirip kaydedin; yeni üretim başlatılmaz.",
+  "没有可恢复的成品地址": "Kurtarılabilecek bir sonuç adresi yok"
 }

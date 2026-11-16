@@ -82,6 +82,8 @@ interface FfmpegRequiredError extends Error {
 
 interface ProviderTools {
   fetch: typeof globalThis.fetch;
+  /** 在开始轮询前持久保存已受理的任务 ID；不用于重新提交生成。 */
+  onTaskSubmitted?(id: string): Promise<void>;
   /** 提取供应商错误正文中的可读原因，并隐藏配置中的密钥和 URL 查询参数。 */
   errorMessage(value: unknown): string;
   hash: typeof Bun.hash;
@@ -229,6 +231,8 @@ interface ProviderDefinition<TRules extends readonly ProviderFormRule[] = readon
   /** 未实现的方法保持缺省，调用方据此判断能力是否可用。 */
   generateImage?: GenerateMedia<ImageRequest, ProviderConfig<TRules>>;
   generateVideo?: GenerateMedia<VideoRequest, ProviderConfig<TRules>>;
+  /** 只查询已提交的原视频任务，不创建任务。 */
+  queryVideoTask?: (this: ProviderContext<ProviderConfig<TRules>>, request: { model: string; id: string }) => Promise<{ status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "expired" | "unknown"; detail?: string; assets?: MediaAsset[] }>;
   generateAudio?: GenerateMedia<AudioRequest, ProviderConfig<TRules>>;
   /** 可选的供应商媒体预处理；未实现时保持原请求。 */
   processMedia?: (this: ProviderContext<ProviderConfig<TRules>>, request: ImageRequest | VideoRequest | AudioRequest) => Promise<ImageRequest | VideoRequest | AudioRequest>;

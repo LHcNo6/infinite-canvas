@@ -20,6 +20,14 @@ export type NodeModelCall = {
   detail: string;
   saveError?: string;
   results?: { path: string; mimeType: string }[];
+  canDownload?: boolean;
+  canQuery?: boolean;
+  canSupplyResult?: boolean;
+  upstreamTaskId?: string;
+  upstreamStatus?: string;
+  lastQueriedAt?: string;
+  queryDetail?: string;
+  queryError?: boolean;
 };
 
 export type NodeAiModel = {
@@ -293,9 +301,41 @@ async function requestModel(input: NodeAiRequest, context: Context, model: Model
 
 export function useNodeAi(nodeData?: NodeData, nodeId?: string) {
   const getCanvas = inject<(() => { id: string } | undefined) | undefined>("canvas", undefined);
+  const getDirectory = inject<(() => string) | undefined>("workspaceDirectory", undefined);
   const controller = new AbortController();
   onScopeDispose(() => controller.abort());
   const requestSignal = (signal?: AbortSignal) => signal ? AbortSignal.any([controller.signal, signal]) : controller.signal;
+
+  async function modelCallsRequest<T>(action: "list" | "retry" | "recover" | "query", callId?: string, url?: string, signal?: AbortSignal): Promise<T> {
+    const canvasId = nodeData?.modelCallCanvasId || getCanvas?.()?.id;
+    const directory = getDirectory?.();
+    if (!canvasId || !directory || !nodeId) throw new Error("无法读取当前画布的模型调用记录");
+    const response = await fetch(`/api/ai/media/calls/${action}`, {
+      method: "POST", headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      body: JSON.stringify({ directory, canvasId, nodeId, callId, url }), signal: requestSignal(signal),
+    });
+    return readResult<T>(response);
+  }
+
+  async function getModelCalls(signal?: AbortSignal): Promise<NodeModelCall[]> {
+    const stored = await modelCallsRequest<NodeModelCall[]>("list", undefined, undefined, signal);
+    const merged = new Map<string, NodeModelCall>();
+    for (const call of Array.isArray(nodeData?.modelCalls) ? nodeData.modelCalls : []) merged.set(call.id, call);
+    for (const call of stored) merged.set(call.id, call);
+    return [...merged.values()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  }
+
+  function retryDownload(callId: string, url?: string, signal?: AbortSignal) {
+    return modelCallsRequest<(NodeImageResult | NodeVideoResult)[]>("recover", callId, url, signal);
+  }
+
+  function queryModelCall(callId: string, signal?: AbortSignal) {
+    return modelCallsRequest<{ status?: string; detail: string }>("query", callId, undefined, signal);
+  }
+
+  function retrySaveModelCall(callId: string, signal?: AbortSignal) {
+    return modelCallsRequest<void>("retry", callId, undefined, signal);
+  }
 
   async function recordCall<T>(type: NodeModelCall["type"], input: { providerId: string; modelId: string }, signal: AbortSignal | undefined, task: () => Promise<T>, generationCall?: NodeGenerationCall): Promise<T> {
     const started = generationCall ? Date.parse(generationCall.startedAt) : Date.now();
@@ -499,5 +539,5 @@ export function useNodeAi(nodeData?: NodeData, nodeId?: string) {
     return recordCall("text", input, input.signal, () => generateText(input));
   }
 
-  return { getModels, getMediaModels, getMediaPrice, generateImage, generateVideo, generateAudio, generate };
+  return { getModels, getMediaModels, getMediaPrice, getModelCalls, retryDownload, queryModelCall, retrySaveModelCall, generateImage, generateVideo, generateAudio, generate };
 }

@@ -2,7 +2,7 @@ import { h } from "vue";
 import { ElNotification } from "element-plus";
 import nodeError from "./components/nodeError.vue";
 
-export function showNodeError(error: unknown, title: string) {
+export function showNodeError(error: unknown, title: string, action?: { label: string; run: () => void }) {
   if (error instanceof Error && error.name === "AbortError") return;
   const detail = (error as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
   const message = typeof detail === "string" && detail.trim() ? detail
@@ -13,7 +13,7 @@ export function showNodeError(error: unknown, title: string) {
     type: "error",
     duration: 0,
     customClass: "nodeErrorNotification",
-    message: h(nodeError, { message: message || title, context: title, signal: controller.signal }),
+    message: h(nodeError, { message: message || title, context: title, signal: controller.signal, action }),
     onClose: () => controller.abort(),
   });
 }

@@ -1,12 +1,15 @@
 <template>
   <nodeSkeleton
     v-bind="nodeProps"
+    v-model:callsVisible="callsVisible"
     v-model:bottomVisible="node.selected"
     :topVisible="node.selected"
     topWidth="max-content"
     :downloadUrl="previewUrl"
     :downloadName="outputFile?.url.split(/[\\/]/).at(-1)"
     @fullscreen="player?.enterFullscreen()"
+    :canRestoreMedia="!generating && !deleting && !uploading && !extractingFrame && !actions?.processing && !actions?.creatingAnalysis"
+    @restoreMedia="restoreMedia"
     :bottomWidth="660"
     :style="{ width: previewUrl && videoWidth ? `${videoWidth + 18}px` : undefined }">
     <template #topActions>
@@ -174,8 +177,9 @@ const videoWidth = ref(0);
 let generationController: AbortController | undefined;
 let frameController: AbortController | undefined;
 let frameTask: Promise<void> | undefined;
-const generationState = useNodeGeneration(outputs, () => generationController?.abort(), { mediaType: "video", getModelCalls: () => node.data.modelCalls });
+const generationState = useNodeGeneration(outputs, () => generationController?.abort(), { mediaType: "video", getModelCalls: () => node.data.modelCalls, ai });
 const { generating } = generationState;
+const callsVisible = ref(false);
 let generation: Promise<void> | undefined;
 let modelsRequest: Promise<void> | undefined;
 // ACT: 供应商未声明视频比例范围，沿用界面的通用比例，具体支持范围由供应商校验。
@@ -292,6 +296,10 @@ function getGenerationInput(prompt: string): Omit<NodeVideoRequest, "directory">
   };
 }
 const outputFile = computed(() => outputs.value.video?.dataType === "VIDEO" ? outputs.value.video.value : undefined);
+function restoreMedia(result: { path: string; mimeType: string; mediaType: "image" | "video" }) {
+  if (result.mediaType !== "video" || generating.value || deleting.value || uploading.value || extractingFrame.value || actions.value?.processing || actions.value?.creatingAnalysis) return;
+  outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
+}
 const previewUrl = files.useFileUrl(
   outputFile,
   (error) => showNodeError(error, "视频读取失败")
@@ -496,7 +504,7 @@ async function startGeneration() {
       data.value.lastGenerationRecord = { attemptId, videoUrl: result.path, videoMimeType: result.mimeType };
     }), attemptId)
     .then(() => extractFrame())
-    .catch((error) => { frameStatus.value = "failed"; frameError.value = "视频生成失败，未提取尾帧"; showNodeError(error, "视频生成失败"); })
+    .catch((error) => { frameStatus.value = "failed"; frameError.value = "视频生成失败，未提取尾帧"; showNodeError(error, "视频生成失败", { label: "打开调用记录与任务恢复", run: () => { callsVisible.value = true; } }); })
     .finally(() => {
       generationController = undefined;
     });

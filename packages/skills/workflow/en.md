@@ -2,7 +2,7 @@
 name: workflow
 description: Use to turn an idea, novel, or script into video, or continue and revise an existing project. Produce scripts, character and scene assets, and video clips in Infinite Canvas, reusing existing media. Prefer the dedicated skills for pet commerce shorts, videos over 30 seconds, or episodic projects. Text-only requests or skill discussions do not start production.
 metadata:
-  version: "2.7.6"
+  version: "2.7.8"
   displayName: Turn Ideas and Scripts into Video
   author: Infinite Canvas
   github: https://github.com/HBAI-Ltd/Toonflow-app
@@ -536,6 +536,8 @@ Only explicitly authorized automatic mode called by `longVideoWorkflow` covers p
 - Dialogue does not automatically require an external voice sample. PART A controls prompt sound; execution references only verify native sound/audio inputs, not rewrite its words/sound rules.
 
 ## Completion and recovery
+
+For definite image/video generation failures, pause the failed node and its dependencies, preserve results, and follow this turn's canvas-tool failure recovery procedure. Use `askUser` once for the failed batch: handle manually via the node's call-history/recovery window, or authorize Agent inspection of the listed calls and one download-recovery attempt per call. Automatic mode follows the same choice. Skips, cancellation, and unanswered questions grant no authority. Recovery neither regenerates nor adopts outputs; after a successful download, ask the user to select Use result in that window and verify the output before resuming dependencies. Report expired waits, unknown status, and user cancellation as their actual states, not definite generation failures. Any later new generation requires separate explicit authorization for the failed object and must fit the original mode's scope and budget.
 
 Save text through node functions and obtain actual paths from `data.textPath`. Use a concise status ledger and overview across turns, reusing existing records rather than demanding template rework. Pending/adopted text needs fixed version evidence; generation retains prompts/settings/references/old outputs. Recheck actual nodes after confirmation for edits made during waiting. Prefer fixed asset nodes for adopted media and separate revision candidates; see state/delivery.
 

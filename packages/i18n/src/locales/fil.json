@@ -3275,5 +3275,16 @@
   "正在调用 {0}": "Tinatawag ang {0}",
   "调用已结束": "Tapos na ang mga tawag",
   "{0} 次失败": "{0} nabigo",
-  "{0} 次中断": "{0} naantala"
+  "{0} 次中断": "{0} naantala",
+  "模型调用标识无效": "Hindi wastong ID ng tawag sa modelo",
+  "该供应商尚未支持查询原任务": "Hindi pa sinusuportahan ng provider na ito ang pag-query ng kasalukuyang gawain",
+  "查询原任务失败": "Hindi ma-query ang kasalukuyang gawain",
+  "上游任务 ID 无效": "Hindi wastong task ID ng provider",
+  "上游已返回成品，正在下载保存": "Natanggap ang resulta mula sa provider; dina-download at sine-save",
+  "上游已返回成品，本地下载或保存未完成；可在模型调用记录中重试下载，不会重新生成。\n": "上游已返回成品，本地下载或保存未完成；可在模型调用记录中重试下载，不会重新生成。\n",
+  "该调用仍在处理中，请等待完成": "Pinoproseso pa ang tawag na ito. Hintaying matapos",
+  "没有可查询的上游任务 ID": "Walang task ID ng provider na maaaring i-query",
+  "原任务未返回可下载的成品地址": "Walang ibinalik na mada-download na URL ng resulta ang kasalukuyang gawain",
+  "上游已完成，点击重新下载保存成品；不会重新生成。": "Tapos na ang pagbuo. I-download at i-save ang resulta; walang bagong pagbuong isusumite.",
+  "没有可恢复的成品地址": "Walang URL ng resulta na maaaring mabawi"
 }

@@ -11,6 +11,7 @@
 | 界面与品牌 | [外观与品牌](appearanceAndBrand.md) |
 | 工作区 | [工作区切换](workspaceSwitch.md) |
 | 媒体模型 | [安泰信媒体模型](antaixinModels.md) |
+| 成品恢复 | [Agent 调用记录、下载恢复与失败授权](nodeModelCalls.md) |
 | 生成节点 | [配置回执](compactNodeConfig.md)、[上传素材](generationNodeUpload.md)、[生成等待](generationWaiting.md)、[模型调用记录](nodeModelCalls.md) |
 | 视频制作 | [宠物短视频与带货提示词](petShortVideo.md)、[视频尾帧](videoLastFrame.md)、[视频合成](videoComposition.md) |
 | Agent 工具 | [回复与工具活动](agentReplies.md)、[沙盒导出](sandboxExports.md) |

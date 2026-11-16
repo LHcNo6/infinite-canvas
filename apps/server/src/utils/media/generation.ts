@@ -9,6 +9,8 @@ import { lockWorkspaceFiles, resolveWorkspacePath, writeWorkspaceFile } from "@/
 import { beginGeneration, getProviderPrice } from "@/utils/media/billing";
 import { detectMimeType, readPriceReference } from "@/utils/media/priceReference";
 import { rememberGeneratedImageOrigin, removeGeneratedImageOrigin, resolveOriginalImageUrl } from "./origin.js";
+import { readSystemProxy } from "@/utils/network/system";
+import { requestNetwork, type NetworkProfile } from "@/utils/network/transport";
 
 const maxMediaSize = 100 * 1024 * 1024;
 const mediaExtensions: Record<string, string> = {
@@ -70,11 +72,37 @@ export async function readReference(cwd: string, reference: MediaReference, medi
 
 async function downloadAsset(url: string, signal?: AbortSignal) {
   if (!/^https?:\/\//i.test(url)) invalid("生成结果必须使用 HTTP 或 HTTPS 地址");
-  const response = await fetch(url, { signal }).catch(error => {
+  // ACT: 只重试成品 GET；未配置应用网络时，连接失败可借用系统代理，不覆盖用户明确的网络选择。
+  let failure: unknown;
+  let fallback: NetworkProfile | undefined;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const deadline = AbortSignal.timeout(60000);
+    const downloadSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
+    try {
+      return await readDownload(url, downloadSignal, fallback);
+    } catch (error) {
+      signal?.throwIfAborted();
+      failure = error;
+      const status = (error as { status?: number }).status;
+      if (status && status !== 408 && status !== 429 && status < 500) throw error;
+      if (!status && !fallback && conf.get("settings", {}).network === undefined) {
+        const system = await readSystemProxy().catch(() => undefined);
+        if (system?.httpProxy || system?.httpsProxy) fallback = system;
+      }
+    }
+  }
+  throw new Error(`下载生成结果失败：无法读取 ${new URL(url).hostname}；请检查网络设置及成品链接有效期`, { cause: failure });
+}
+
+async function readDownload(url: string, signal: AbortSignal, profile?: NetworkProfile) {
+  const response = await requestNetwork(url, { signal }, profile).catch(error => {
     signal?.throwIfAborted();
     throw new Error(`下载生成结果失败：无法连接 ${new URL(url).hostname}`, { cause: error });
   });
-  if (!response.ok) throw new Error(t`下载生成结果失败（HTTP ${response.status}）`);
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw Object.assign(new Error(t`下载生成结果失败（HTTP ${response.status}）`), { status: response.status });
+  }
   if (Number(response.headers.get("content-length")) > maxMediaSize) {
     await response.body?.cancel();
     invalid("生成文件不能超过 100 MB");
@@ -160,11 +188,11 @@ async function prepareRequest<T>(directory: string | undefined, mediaType: "imag
   };
 }
 
-async function configuredProvider(request: MediaGenerationRequest, mediaType: "image" | "video" | "audio", signal?: AbortSignal, directory?: string) {
+async function configuredProvider(request: MediaGenerationRequest, mediaType: "image" | "video" | "audio", signal?: AbortSignal, directory?: string, onTaskSubmitted?: (id: string) => Promise<void>) {
   const info = await getMediaProvider(request.providerId);
   if (!info.models.some(model => model.id === request.modelId && model.type === mediaType)) invalid("所选媒体模型不存在或类型不匹配，请重新选择");
   const configurations = record(conf.get("settings", {}).mediaProviderConfigs);
-  return loadMediaProviderSource(info.source, record(configurations[info.id]), signal, undefined, directory);
+  return loadMediaProviderSource(info.source, record(configurations[info.id]), signal, undefined, directory, onTaskSubmitted);
 }
 
 async function preparePriceRequest(directory: string | undefined, mediaType: "image" | "video" | "audio", request: MediaGenerationRequest, signal?: AbortSignal) {
@@ -191,12 +219,22 @@ export async function getMediaPrice(directory: string | undefined, mediaType: "i
   return getProviderPrice(provider, prepared);
 }
 
+export async function queryVideoTask(directory: string, providerId: string, modelId: string, id: string) {
+  const provider = await configuredProvider({ providerId, modelId, prompt: "" }, "video", AbortSignal.timeout(35000), directory);
+  if (!provider.queryVideoTask) invalid("该供应商尚未支持查询原任务");
+  try {
+    const result = await provider.queryVideoTask({ model: modelId, id });
+    return { ...result, detail: result.detail ? provider.tool.errorMessage(result.detail) : undefined };
+  } catch (cause) { throw new Error(provider.tool.errorMessage(cause) || "查询原任务失败"); }
+}
+
 export async function generateMedia(
   cwd: string,
   mediaType: "image" | "video" | "audio",
   request: MediaGenerationRequest,
   signal?: AbortSignal,
   onStage?: (stage: string) => void,
+  checkpoint?: { assets(assets: MediaAsset[], outputDirectory: string): Promise<void>; task(id: string): Promise<void> },
 ): Promise<GeneratedMedia[]> {
   onStage?.("prepare");
   signal?.throwIfAborted();
@@ -204,7 +242,7 @@ export async function generateMedia(
   const directory = await realpath(cwd);
   const outputDirectory = request.outputDirectory ?? "assets/generated";
   await resolveWorkspacePath(directory, outputDirectory, true);
-  const provider = await configuredProvider(request, mediaType, signal, directory);
+  const provider = await configuredProvider(request, mediaType, signal, directory, checkpoint?.task);
   const generate = mediaType === "image" ? provider.generateImage : mediaType === "video" ? provider.generateVideo : provider.generateAudio;
   if (typeof generate !== "function") invalid(t`此供应商不支持${translateMessage({ image: "图片", video: "视频", audio: "音频" }[mediaType])}生成`);
   const rules = Array.isArray(provider.rules) ? provider.rules : [];
@@ -213,8 +251,6 @@ export async function generateMedia(
   const prepared = await prepareRequest(directory, mediaType, request, read, signal);
   signal?.throwIfAborted();
   const finish = beginGeneration(provider);
-  const written: string[] = [];
-  const result: GeneratedMedia[] = [];
   try {
     signal?.throwIfAborted();
     const { type, ...parameters } = prepared;
@@ -222,6 +258,15 @@ export async function generateMedia(
     const assets = type === "audio" ? await provider.generateAudio!(parameters as AudioRequest)
       : type === "image" ? await provider.generateImage!(parameters as ImageRequest) : await provider.generateVideo!(parameters as VideoRequest);
     if (!Array.isArray(assets) || !assets.length) invalid("供应商未返回生成结果");
+    await checkpoint?.assets(assets, outputDirectory);
+    return await saveMediaAssets(directory, mediaType, assets, outputDirectory, signal, onStage);
+  } finally { finish(); }
+}
+
+export async function saveMediaAssets(directory: string, mediaType: "image" | "video" | "audio", assets: MediaAsset[], outputDirectory: string, signal?: AbortSignal, onStage?: (stage: string) => void): Promise<GeneratedMedia[]> {
+  const written: string[] = [];
+  const result: GeneratedMedia[] = [];
+  try {
     for (const asset of assets) {
       signal?.throwIfAborted();
       onStage?.("readResult");
@@ -250,5 +295,5 @@ export async function generateMedia(
       await unlink(path).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT") throw error; });
     }));
     throw err;
-  } finally { finish(); }
+  }
 }

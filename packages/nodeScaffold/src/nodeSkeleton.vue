@@ -105,8 +105,8 @@
         @keydown.enter.stop.prevent="editLabel">
         {{ label }}
       </span>
-      <div v-if="!readOnly" class="nodeActions nodrag nopan" @pointerdown.stop @mousedown.stop @dblclick.stop>
-        <el-button :icon="IconListDetails" text title="模型调用记录" aria-label="模型调用记录" @click.stop="callsVisible = true" />
+      <div v-if="!readOnly" class="nodeActions nodrag nopan" :class="{ mediaCallActions: canRestoreMedia !== undefined }" @pointerdown.stop @mousedown.stop @dblclick.stop>
+        <el-button :icon="IconListDetails" :class="{ callHistoryButton: canRestoreMedia !== undefined }" text title="模型调用记录" aria-label="模型调用记录" @click.stop="callsVisible = true"><span v-if="canRestoreMedia !== undefined">调用记录与恢复</span></el-button>
         <el-button
           :icon="IconRefresh"
           :loading="loading || reloading"
@@ -175,7 +175,9 @@
   </div>
   </teleport>
   <el-dialog v-model="callsVisible" title="模型调用记录" width="min(720px, 92vw)" appendToBody>
+    <div class="callDetail">可重新查询原视频任务、下载已生成的成品；这些操作不会重新提交生成。</div>
     <div v-if="callsError" class="callDetail">{{ callsError }} <el-button text @click="loadCalls">重新读取</el-button></div>
+    <div v-if="callsActionError" class="callDetail" role="alert">{{ callsActionError }}</div>
     <div v-if="!modelCalls.length" class="callEmpty">暂无模型调用记录</div>
     <div v-else class="callList">
       <div v-for="call in modelCalls" :key="call.id" class="callItem">
@@ -186,7 +188,22 @@
         </div>
         <div class="callMeta">供应商：{{ call.providerId }} · 模型：{{ call.modelId }} · 耗时：{{ ((call.status === 'running' ? Math.max(0, callsNow - Date.parse(call.startedAt)) : call.durationMs) / 1000).toFixed(1) }} 秒</div>
         <div class="callDetail" tabindex="0">{{ call.detail }}</div>
-        <div v-for="result in call.results" :key="result.path" class="callDetail">结果：{{ result.path }}</div>
+        <div v-if="call.upstreamTaskId" class="callDetail">上游任务 ID：{{ call.upstreamTaskId }}</div>
+        <div v-if="call.lastQueriedAt" class="callDetail">最近查询：{{ new Date(call.lastQueriedAt).toLocaleString() }} · {{ call.queryError ? '本次查询失败，保留上次状态' : `上游状态：${call.upstreamStatus}` }}<br />{{ call.queryDetail }}</div>
+        <div v-if="call.type === 'video' && !call.upstreamTaskId && ['failed', 'unknown', 'cancelled'].includes(call.status)" class="callDetail">未取得任务 ID，无法查询原任务；请先到供应商后台核对，勿直接重复生成。</div>
+        <div v-for="result in call.results" :key="result.path" class="callDetail">结果：{{ result.path }}
+          <el-button v-if="canRestoreMedia && !readOnly && (call.type === 'image' || call.type === 'video')" text @click="emit('restoreMedia', { ...result, mediaType: call.type })">使用结果</el-button>
+        </div>
+        <div v-if="call.canDownload && !readOnly" class="callDetail">
+          <el-button :loading="recoveringCall === call.id" :disabled="!!recoveringCall || !!queryingCall" @click="recoverCall(call.id)">重新下载成品（不重新生成）</el-button>
+        </div>
+        <div v-if="call.canQuery && !readOnly" class="callDetail">
+          <el-button :loading="queryingCall === call.id" :disabled="!!recoveringCall || !!queryingCall" @click="queryCall(call.id)">重新查询原任务（不重新生成）</el-button>
+        </div>
+        <div v-if="call.canSupplyResult && !readOnly" class="callDetail">
+          未保存成品地址，无法直接重新下载。可从供应商后台复制成品直链后恢复。
+          <el-button :loading="recoveringCall === call.id" :disabled="!!recoveringCall || !!queryingCall" @click="recoverCall(call.id, true)">补充成品链接并下载</el-button>
+        </div>
         <div v-if="call.saveError" class="callDetail">{{ call.saveError }} <el-button text @click="retryCall(call.id)">重试保存</el-button></div>
       </div>
     </div>
@@ -210,7 +227,7 @@ import {
   IconLoader2,
   IconListDetails,
 } from "@tabler/icons-vue";
-import { ElCard, ElButton, ElDialog, ElDivider, ElDropdown, ElDropdownMenu, ElDropdownItem, ElMessage } from "element-plus";
+import { ElCard, ElButton, ElDialog, ElDivider, ElDropdown, ElDropdownMenu, ElDropdownItem, ElMessage, ElMessageBox } from "element-plus";
 import type { DropdownInstance } from "element-plus";
 import { validateConnection } from "./connection";
 import { useNodeEvent } from "./nodeEvent";
@@ -218,12 +235,14 @@ import type { NodeConnectionFeedback, NodeData, NodeHandle } from "./connection"
 import type { NodeOutput } from "./values";
 import type { NodeDocumentContext } from "./nodeDocument";
 import type { NodeModelCall } from "./nodeAi";
+import { useNodeAi } from "./nodeAi";
 
 defineOptions({ inheritAttrs: false });
 
 const topVisible = defineModel<boolean>("topVisible", { default: false });
 const bottomVisible = defineModel<boolean>("bottomVisible", { default: false });
-const emit = defineEmits<{ fullscreen: [] }>();
+const callsVisible = defineModel<boolean>("callsVisible", { default: false });
+const emit = defineEmits<{ fullscreen: []; restoreMedia: [result: { path: string; mimeType: string; mediaType: "image" | "video" }] }>();
 const downloading = ref(false);
 const props = withDefaults(
   defineProps<
@@ -237,6 +256,7 @@ const props = withDefaults(
       downloadUrl?: string;
       downloadName?: string;
       fullscreenVisible?: boolean;
+      canRestoreMedia?: boolean;
     }
   >(),
   {
@@ -246,6 +266,7 @@ const props = withDefaults(
     previewReady: true,
     readOnly: false,
     fullscreenVisible: true,
+    canRestoreMedia: undefined,
     topWidth: "20vw",
     bottomWidth: "20vw",
   }
@@ -256,33 +277,46 @@ const handleGroups = computed(() => [
 ]);
 const cardHeight = computed(() => Math.max(100, ...handleGroups.value.map((group) => (group.items.length + 1) * 44)));
 const { id: nodeId, node } = useNode<NodeData>();
-const callsVisible = ref(false);
-const storedCalls = ref<NodeModelCall[]>([]);
+const callsAi = useNodeAi(node.data, nodeId);
+const storedCalls = ref<NodeModelCall[]>();
 const callsError = ref("");
-const getCanvasForCalls = inject<(() => { id: string } | undefined) | undefined>("canvas", undefined);
-const getCallsDirectory = inject<(() => string) | undefined>("workspaceDirectory", undefined);
-const modelCalls = computed(() => {
-  const merged = new Map<string, NodeModelCall>();
-  for (const call of Array.isArray(node.data.modelCalls) ? node.data.modelCalls : []) merged.set(call.id, call);
-  for (const call of storedCalls.value) merged.set(call.id, call);
-  return [...merged.values()].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-});
-async function callsRequest(action: "list" | "retry", callId?: string) {
-  const canvasId = node.data.modelCallCanvasId || getCanvasForCalls?.()?.id;
-  const directory = getCallsDirectory?.();
-  if (!canvasId || !directory) throw new Error("无法读取当前画布的模型调用记录");
-  const response = await fetch(`/api/ai/media/calls/${action}`, { method: "POST", headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" }, body: JSON.stringify({ directory, canvasId, nodeId, callId }) });
-  const result = await response.json();
-  if (!response.ok || result.code !== 200) throw new Error(result.message || "模型调用记录读取失败");
-  return result.data;
-}
+const callsActionError = ref("");
+const recoveringCall = ref("");
+const queryingCall = ref("");
+const modelCalls = computed(() => storedCalls.value ?? (Array.isArray(node.data.modelCalls) ? node.data.modelCalls : []));
 async function loadCalls() {
-  try { storedCalls.value = await callsRequest("list"); callsError.value = ""; }
+  try { storedCalls.value = await callsAi.getModelCalls(); callsError.value = ""; }
   catch (error) { callsError.value = error instanceof Error ? error.message : "模型调用记录读取失败"; }
 }
 async function retryCall(callId: string) {
-  try { await callsRequest("retry", callId); await loadCalls(); }
+  try { await callsAi.retrySaveModelCall(callId); await loadCalls(); }
   catch (error) { callsError.value = error instanceof Error ? error.message : "重试保存失败"; }
+}
+async function recoverCall(callId: string, supplyUrl = false) {
+  if (recoveringCall.value || queryingCall.value) return;
+  recoveringCall.value = callId;
+  callsActionError.value = "";
+  try {
+    let url: string | undefined;
+    if (supplyUrl) {
+      const result = await ElMessageBox.prompt("粘贴供应商后台已生成成品的 HTTP(S) 直链。只下载该链接，不重新生成。", "补充成品链接", {
+        inputValidator: value => { try { const url = new URL(value.trim()); return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password || "请输入有效的 HTTP(S) 成品直链"; } catch { return "请输入有效的 HTTP(S) 成品直链"; } },
+      });
+      url = result.value.trim();
+    }
+    await callsAi.retryDownload(callId, url);
+    await loadCalls();
+    ElMessage.success("成品已保存，可点击使用结果；未重新生成");
+  } catch (error) { if (error !== "cancel" && error !== "close") callsActionError.value = error instanceof Error ? error.message : "成品下载恢复失败"; }
+  finally { recoveringCall.value = ""; }
+}
+async function queryCall(callId: string) {
+  if (recoveringCall.value || queryingCall.value) return;
+  queryingCall.value = callId;
+  callsActionError.value = "";
+  try { await callsAi.queryModelCall(callId); }
+  catch (error) { callsActionError.value = error instanceof Error ? error.message : "查询原任务失败"; }
+  finally { await loadCalls(); queryingCall.value = ""; }
 }
 watch(callsVisible, (visible, _previous, onCleanup) => {
   if (!visible) return;
@@ -837,6 +871,7 @@ watch(
   }
 
   .titleBar {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -887,6 +922,17 @@ watch(
         height: 24px;
         margin: 0;
         padding: 0;
+      }
+      .callHistoryButton { width: auto; padding: 0 4px; }
+
+      &.mediaCallActions {
+        position: absolute;
+        right: 0;
+        bottom: 100%;
+        padding: 2px 4px;
+        border-radius: var(--el-border-radius-base);
+        background: var(--el-bg-color);
+        box-shadow: var(--el-box-shadow-light);
       }
     }
   }

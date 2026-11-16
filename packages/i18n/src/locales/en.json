@@ -3277,5 +3277,16 @@
   "正在调用 {0}": "Calling {0}",
   "调用已结束": "Calls finished",
   "{0} 次失败": "{0} failed",
-  "{0} 次中断": "{0} interrupted"
+  "{0} 次中断": "{0} interrupted",
+  "模型调用标识无效": "Invalid model call ID",
+  "该供应商尚未支持查询原任务": "This provider does not support querying existing tasks",
+  "查询原任务失败": "Failed to query the existing task",
+  "上游任务 ID 无效": "Invalid upstream task ID",
+  "上游已返回成品，正在下载保存": "The provider returned the result; downloading and saving",
+  "上游已返回成品，本地下载或保存未完成；可在模型调用记录中重试下载，不会重新生成。\n": "上游已返回成品，本地下载或保存未完成；可在模型调用记录中重试下载，不会重新生成。\n",
+  "该调用仍在处理中，请等待完成": "This call is still being processed. Please wait",
+  "没有可查询的上游任务 ID": "No upstream task ID is available to query",
+  "原任务未返回可下载的成品地址": "The existing task did not return a downloadable result URL",
+  "上游已完成，点击重新下载保存成品；不会重新生成。": "The provider has finished. Download the result to save it; no new generation will be submitted.",
+  "没有可恢复的成品地址": "No result URL is available for recovery"
 }

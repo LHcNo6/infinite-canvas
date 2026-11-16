@@ -2,7 +2,7 @@
 name: canvas
 description: Use to add, connect, move, rename, or delete nodes in Infinite Canvas, arrange layouts, switch canvases, or invoke node functions. Perform and verify changes through canvas tools. Use a production skill for a complete story or video project.
 metadata:
-  version: "2.1.3"
+  version: "2.1.5"
   displayName: Build and Organize Canvas Nodes
   author: Infinite Canvas
   github: https://github.com/HBAI-Ltd/Toonflow-app
@@ -119,5 +119,7 @@ Return values depend on the function; no return is `null`. The five read tools' 
 - **Arrange:** Only for an explicit whole-canvas request, call `arrangeCanvas({})` once. It accepts no local scope. Unmeasured/immovable nodes cause explicit errors; do not guess sizes/bypass restrictions. Empty canvases return no IDs and perform no fit/layout. For local work, read actual positions and use `moveNodes`, then optionally scoped `fitCanvas`. Viewing alone requires fitting, not rearrangement. Never delete/recreate nodes instead of moving them.
 
 ## Failure handling
+
+For definite image/video generation failures, pause the failed node and its dependencies, preserve results, and follow this turn's canvas-tool failure recovery procedure. Use `askUser` once for the failed batch: handle manually via the node's call-history/recovery window, or authorize Agent inspection of the listed calls and one download-recovery attempt per call. Automatic mode follows the same choice. Skips, cancellation, and unanswered questions grant no authority. Recovery neither regenerates nor adopts outputs; after a successful download, ask the user to select Use result in that window and verify the output before resuming dependencies. Report expired waits, unknown status, and user cancellation as their actual states, not definite generation failures.
 
 Rediscover disabled types, missing ports, and unregistered functions through their respective tools rather than guessing alternatives. After closure, manual project/canvas switching, or invalid context, stop using old IDs and ask for a request from the target canvas. Timeouts, cancellation, or save failure do not prove rollback; if context remains valid, reread for already-created nodes/edges/canvases before retrying. Tools await necessary saves; do not write JSON separately. There is no generic delete-canvas, arbitrary-data-write, or arbitrary-viewport-setting interface.

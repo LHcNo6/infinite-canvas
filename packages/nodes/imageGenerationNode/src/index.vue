@@ -1,12 +1,15 @@
 <template>
   <nodeSkeleton
     v-bind="nodeProps"
+    v-model:callsVisible="callsVisible"
     v-model:bottomVisible="node.selected"
     :topVisible="node.selected"
     topWidth="max-content"
     :downloadUrl="previewUrl"
     :downloadName="outputFile?.url.split(/[\\/]/).at(-1)"
     @fullscreen="previewVisible = true"
+    :canRestoreMedia="!generating && !deleting && !uploading && !editor?.busy && !lighting?.generating && !multiAngle?.generating && !gridSplit?.splitting && !panorama?.busy"
+    @restoreMedia="restoreMedia"
     :bottomWidth="660"
     :style="{ width: (previewUrl || inpaintGuideUrl) && imageWidth ? `${imageWidth + 18}px` : undefined }">
     <template v-if="editor?.mode" #top><div ref="paintToolbar" /></template>
@@ -178,8 +181,9 @@ const previewVisible = ref(false);
 const inpaintPreviewVisible = ref(false);
 const imageWidth = ref(0);
 let generationController: AbortController | undefined;
-const generationState = useNodeGeneration(outputs, () => generationController?.abort(), { mediaType: "image", getModelCalls: () => node.data.modelCalls });
+const generationState = useNodeGeneration(outputs, () => generationController?.abort(), { mediaType: "image", getModelCalls: () => node.data.modelCalls, ai });
 const { generating } = generationState;
+const callsVisible = ref(false);
 let generation: Promise<void> | undefined;
 let modelsRequest: Promise<void> | undefined;
 const selectedModel = computed(() => models.value.find((item) => JSON.stringify([item.providerId, item.modelId]) === data.value.model));
@@ -246,6 +250,10 @@ const priceInput = computed(() => {
   return inpaint ? buildInpaintRequest(input, inpaint) : input;
 });
 const outputFile = computed(() => outputs.value.image?.dataType === "IMAGE" ? outputs.value.image.value : undefined);
+function restoreMedia(result: { path: string; mimeType: string; mediaType: "image" | "video" }) {
+  if (result.mediaType !== "image" || generating.value || deleting.value || uploading.value || editor.value?.busy || lighting.value?.generating || multiAngle.value?.generating || gridSplit.value?.splitting || panorama.value?.busy) return;
+  outputs.value.image = { dataType: "IMAGE", value: { url: result.path, mimeType: result.mimeType } };
+}
 const inpaintGuideUrl = files.useFileUrl(
   () => data.value.inpaint?.guide ? { url: data.value.inpaint.guide, mimeType: "image/png" } : undefined,
   error => showNodeError(error, "重绘标注读取失败")
@@ -363,7 +371,7 @@ async function startGeneration() {
       if (!result) throw new Error("供应商未返回图片");
       outputs.value.image = { dataType: "IMAGE", value: { url: result.path, mimeType: result.mimeType } };
     }))
-    .catch((error) => showNodeError(error, "图片生成失败"))
+    .catch((error) => showNodeError(error, "图片生成失败", { label: "打开调用记录与下载恢复", run: () => { callsVisible.value = true; } }))
     .finally(() => {
       generationController = undefined;
     });

@@ -2,6 +2,7 @@
   <div class="nodeErrorContent">
     <div class="errorLabel">错误详情</div>
     <div class="errorDetail" tabindex="0">{{ message }}</div>
+    <el-button v-if="action" size="small" @click="action.run">{{ action.label }}</el-button>
     <div v-if="!explanation || explaining" class="explainControls">
       <template v-if="models.length">
         <div class="errorLabel">用于解释错误的文本模型</div>
@@ -30,7 +31,7 @@ import { ElButton, ElNotification, ElSelect, ElOption, ElOptionGroup } from "ele
 import { useNodeAi, type NodeAiModel } from "@toonflow/nodes-scaffold/nodeAi";
 import { groupNodeModels } from "../groupNodeModels";
 
-const props = defineProps<{ message: string; context: string; signal: AbortSignal }>();
+const props = defineProps<{ message: string; context: string; signal: AbortSignal; action?: { label: string; run: () => void } }>();
 const ai = useNodeAi();
 const explaining = ref(false);
 const explanation = ref("");

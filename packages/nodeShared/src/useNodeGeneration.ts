@@ -1,10 +1,11 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
 import { nodeTools, z } from "@toonflow/nodes-scaffold/nodeTools";
 import type { NodeOutputs } from "@toonflow/nodes-scaffold/values";
-import type { NodeGenerationCall, NodeModelCall } from "@toonflow/nodes-scaffold/nodeAi";
+import type { NodeGenerationCall, NodeModelCall, useNodeAi } from "@toonflow/nodes-scaffold/nodeAi";
 
 export function useNodeGeneration(outputs: Readonly<Ref<NodeOutputs>>, cancel: () => void,
-  options?: { mediaType: "image" | "video"; getModelCalls: () => NodeModelCall[] | undefined }) {
+  options?: { mediaType: "image" | "video"; getModelCalls: () => NodeModelCall[] | undefined;
+    ai: Pick<ReturnType<typeof useNodeAi>, "getModelCalls" | "retryDownload"> }) {
   const status = ref<"idle" | "running" | "succeeded" | "failed">("idle");
   const error = ref("");
   const generating = computed(() => status.value === "running");
@@ -66,6 +67,69 @@ export function useNodeGeneration(outputs: Readonly<Ref<NodeOutputs>>, cancel: (
       return { ...getStatus(), cancellationRequested };
     },
   });
+
+  if (options) {
+    const describeCall = (call: NodeModelCall, fullDetail = false) => {
+      const text = (value?: string) => value?.replace(/https?:\/\/[^\s<>"']+/gi, "[链接已隐藏]").slice(0, fullDetail ? 16000 : 4000);
+      // 只返回公开字段；旧画布记录也不透传恢复地址或其他内部字段。
+      return {
+        id: call.id, type: call.type, providerId: call.providerId, modelId: call.modelId,
+        startedAt: call.startedAt, durationMs: call.durationMs, status: call.status, detail: text(call.detail),
+        results: call.results, saveError: text(call.saveError), canDownload: !!call.canDownload,
+        canQuery: !!call.canQuery, canSupplyResult: !!call.canSupplyResult,
+        upstreamTaskId: call.upstreamTaskId, upstreamStatus: call.upstreamStatus,
+        lastQueriedAt: call.lastQueriedAt, queryDetail: text(call.queryDetail), queryError: call.queryError,
+      };
+    };
+    nodeTools.register({
+      name: "getModelCalls",
+      description: "读取此节点的持久模型调用记录，合并旧画布记录，同编号优先服务端记录。可按 callId 查看详情，或用 offset/limit 分页（默认10条，最多50条）。返回状态、错误、结果路径和 canDownload/canQuery/canSupplyResult；不查询供应商、不生成媒体。canQuery 表示可在调用记录窗口查询原任务，未知状态不能视为失败后重新生成",
+      parameters: z.strictObject({ callId: z.uuid().optional(), offset: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(50).optional() }),
+      async execute({ callId, offset = 0, limit = 10 }, { signal }) {
+        const calls = await options.ai.getModelCalls(signal);
+        signal?.throwIfAborted();
+        if (callId) {
+          const call = calls.find(item => item.id === callId);
+          if (!call) throw new Error("此节点没有该模型调用记录，请先查询记录列表");
+          return { call: describeCall(call, true) };
+        }
+        const page = calls.slice(offset, offset + limit);
+        const hasMore = offset + page.length < calls.length;
+        return { calls: page.map(call => describeCall(call)), total: calls.length, offset, limit, hasMore,
+          ...(hasMore ? { nextOffset: offset + page.length } : {}) };
+      },
+    });
+    nodeTools.register({
+      name: "retryDownload",
+      description: "仅重新下载指定 callId 的原成品，不重新生成、不覆盖节点输出。先用 getModelCalls 核对记录；canDownload 为 true 可直接下载，canSupplyResult 为 true 时可提供用户给出的 HTTP(S) 成品直链 url，禁止猜测链接。成功返回 files 和更新后的 call，使用结果仍由用户在记录窗口选择。工具最多等待120秒，取消或超时不代表后端下载已停止，必须先重读记录，禁止自动重复下载或生成",
+      parameters: z.strictObject({ callId: z.uuid(), url: z.string().trim().max(16384).url().refine(value => {
+        const url = new URL(value);
+        return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password;
+      }, "请提供不含账号密码的 HTTP(S) 成品直链").optional() }),
+      async execute({ callId, url }, { signal }) {
+        const calls = await options.ai.getModelCalls(signal);
+        signal?.throwIfAborted();
+        const call = calls.find(item => item.id === callId);
+        if (!call || call.type !== options.mediaType) throw new Error("此节点没有该媒体调用记录，请先查询记录列表");
+        if (call.status === "succeeded" && call.results?.length) {
+          return { callId, files: call.results, call: describeCall(call, true), outputChanged: false, alreadySaved: true,
+            message: "该调用已有保存结果，未重复下载；可在调用记录窗口使用结果。" };
+        }
+        if (url ? !call.canSupplyResult : !call.canDownload) {
+          throw new Error(call.canQuery ? "此调用暂无可直接下载的成品，请在调用记录窗口重新查询原任务；未重新生成。"
+            : call.canSupplyResult ? "此调用缺少成品地址，请提供用户从供应商后台取得的成品直链；未重新生成。"
+            : "此调用正在处理或没有可恢复的独立记录，请稍后重读调用记录；未重新生成。");
+        }
+        const files = await options.ai.retryDownload(callId, url, signal);
+        signal?.throwIfAborted();
+        const updated = (await options.ai.getModelCalls(signal)).find(item => item.id === callId);
+        signal?.throwIfAborted();
+        if (!updated) throw new Error("成品已下载，但未读到更新后的记录，请重读调用记录，勿直接重复下载。");
+        return { callId, files, call: describeCall(updated, true), outputChanged: false, alreadySaved: false,
+          message: "成品已保存，未重新生成、未替换节点输出；可在调用记录窗口使用结果。" };
+      },
+    });
+  }
 
   async function run<T>(task: (call: NodeGenerationCall) => Promise<T>, attemptId = crypto.randomUUID()): Promise<T> {
     if (generating.value) throw new Error("节点正在生成，请等待完成");

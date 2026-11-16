@@ -3,6 +3,7 @@ type Context = {
   signal?: AbortSignal;
   tool: {
     fetch: typeof fetch;
+    onTaskSubmitted?(id: string): Promise<void>;
     media?: { inspectImage(input: MediaInput): Promise<{width:number;height:number;format:string}>; resizeImage(input:MediaInput, options:any):Promise<MediaInput> };
   };
 };
@@ -108,12 +109,13 @@ function videoPayloadSummary(content: any[], payload: string): string {
 
 async function videoSubmitError(response: Response, summary: string): Promise<Error> {
   const ray = (response.headers.get("cf-ray") || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 100);
-  const trace = ray ? `；CF-Ray: ${ray}` : "";
+  const requestId = (response.headers.get("x-request-id") || response.headers.get("request-id") || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 160);
+  const trace = `${ray ? `；CF-Ray: ${ray}` : ""}${requestId ? `；Request ID: ${requestId}` : ""}`;
   if (response.status >= 500 || response.status === 408) {
-    await response.body?.cancel().catch(() => {});
+    const upstream = await parseError(response);
     const reason = response.status === 524 ? "Cloudflare 与安泰信源站交互超时"
       : "上游服务异常或超时";
-    return new Error(`视频任务提交异常，HTTP ${response.status}：${reason}${trace}。尚未取得任务 ID，远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。${summary}。延长本机等待时间无法解除网关超时。`);
+    return Object.assign(new Error(`视频任务提交异常，HTTP ${response.status}：${reason}；上游原因：${upstream}${trace}。尚未取得任务 ID，远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。${summary}。延长本机等待时间无法解除网关超时。`), { name: "SubmissionUnknownError" });
   }
   const message=await parseError(response);
   if(response.status===400 && /Reference image upload failed; task was not submitted/i.test(message)) {
@@ -425,6 +427,7 @@ async function generateUnifiedVideo(context: Context, request: VideoRequest, api
   try { result = await response.json(); } catch { throw new Error("视频提交响应无效，未取得任务 ID；远端状态未知，请查看平台记录"); }
   const taskId = result?.id;
   if (typeof taskId !== "string" || !taskId.trim()) throw new Error("视频提交未返回任务 ID；远端状态未知，请查看平台记录");
+  await context.tool.onTaskSubmitted?.(taskId);
   while (true) {
     if (result.status === "completed") {
       if (typeof result.url !== "string" || !/^https?:\/\//i.test(result.url)) throw new Error(`视频完成但未返回链接；任务 ID：${taskId}`);
@@ -447,7 +450,7 @@ async function generateUnifiedVideo(context: Context, request: VideoRequest, api
 export default {
   id: "antaixin",
   label: "安泰信 (Antaixin)",
-  version: "4.1.1",
+  version: "4.1.2",
   modelsUrl: "https://www.antaixin.ai/v1/models",
   readme: "Seedream：1K/2K，最多10张参考图；图片比例以提示词约束，当前图片接口未声明独立比例参数。Seedance：4–30秒、可选音频、首尾帧与多模态参考；旧图片先上传安泰信再提交URL。视频/音频参考须提供公网URL；生成结果可复用来源链接。",
   rules: [
@@ -848,6 +851,29 @@ export default {
     }
   },
 
+  async queryVideoTask(this: Context, request: { model: string; id: string }) {
+    if (!/^[a-zA-Z0-9_-]{1,512}$/.test(request.id)) throw new Error("上游任务 ID 无效");
+    const apiKey = this.config.apiKey?.trim();
+    if (!apiKey) throw new Error("请填写 API Key");
+    const unified = ["wan-3.0", "minimax-h3"].includes(request.model);
+    const fast = request.model === "seedance-2.0-video-fast-enhance";
+    if (!unified && !fast && request.model !== "seedance-2.5-video") throw new Error("该模型暂不支持查询原任务");
+    const base = unified ? "https://antaixin.ai/v1/videos" : fast ? "https://www.antaixin.ai/v1/video/generations" : "https://antaixin.ai/api/v3/contents/generations/tasks";
+    const deadline = AbortSignal.timeout(30000);
+    const signal = this.signal ? AbortSignal.any([deadline, this.signal]) : deadline;
+    const response = await this.tool.fetch(`${base}/${encodeURIComponent(request.id)}`, { method: "GET", headers: { Authorization: `Bearer ${apiKey}` }, signal });
+    if (!response.ok) throw new Error(`查询原任务失败，HTTP ${response.status}：${await parseError(response)}`);
+    const result: any = await response.json();
+    const state = result.status === "completed" ? "succeeded" : result.status === "in_progress" ? "running" : result.status === "canceled" ? "cancelled" : result.status;
+    const status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "expired" | "unknown" = ["queued", "running", "succeeded", "failed", "cancelled", "expired"].includes(state) ? state : "unknown";
+    const url = unified ? result.url : result.content?.video_url;
+    if (status === "succeeded") {
+      if (typeof url !== "string" || !/^https?:\/\//i.test(url)) throw new Error("原任务已成功，但未返回有效成品链接");
+      return { status, assets: [{ mediaType: "video" as const, type: "url" as const, url }] };
+    }
+    return { status, detail: safeErrorText(typeof result.error === "string" ? result.error : result.error?.message || result.error?.code) };
+  },
+
   async generateVideo(this: Context, request: VideoRequest): Promise<MediaAsset[]> {
     this.signal?.throwIfAborted();
     const apiKey = this.config.apiKey?.trim();
@@ -925,18 +951,20 @@ export default {
       });
     } catch (error: any) {
       this.signal?.throwIfAborted();
-      throw new Error(`视频任务提交异常：${combinedSignal.aborted ? "本机等待已超时" : "连接在任务 ID 返回前中断"}。远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。${summary}。`);
+      throw Object.assign(new Error(`视频任务提交异常：${combinedSignal.aborted ? "本机等待已超时" : "连接在任务 ID 返回前中断"}。远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。${summary}。`), { name: "SubmissionUnknownError" });
     }
     if (!submitResponse.ok) throw await videoSubmitError(submitResponse, summary);
     let submitResult: any;
     try { submitResult = await submitResponse.json(); }
     catch {
-      throw new Error(`视频任务提交响应无法解析，尚未取得任务 ID，远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。${summary}。`);
+      throw Object.assign(new Error(`视频任务提交响应无法解析，尚未取得任务 ID，远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。${summary}。`), { name: "SubmissionUnknownError" });
     }
     const taskId = submitResult?.id;
     if (typeof taskId !== "string" || !taskId.trim()) {
-      throw new Error("视频任务提交响应未返回有效任务 ID，远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。");
+      throw Object.assign(new Error("视频任务提交响应未返回有效任务 ID，远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。"), { name: "SubmissionUnknownError" });
     }
+
+    await this.tool.onTaskSubmitted?.(taskId);
 
     while (true) {
       try { await waitForVideoPoll(5000, combinedSignal); }

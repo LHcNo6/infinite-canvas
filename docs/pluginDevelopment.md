@@ -571,6 +571,10 @@ nodeTools.register({
 
 参数应为可转换 JSON Schema 的 Zod 对象，执行前用原 schema 的 parseAsync 校验。返回值可 JSON 序列化，失败抛错；异步操作传递 signal，更新状态前再检查取消。单次最多等待 120 秒，忽略信号的代码不会被自动强制终止。节点操作依赖正在挂载的画布实例。
 
+内置图片、视频生成节点从 2.1.0 起提供 `node:getModelCalls` 和 `node:retryDownload`，继续通过 `getNodeTools` 获取真实 schema 后调用，不是新的独立工具插件。前者合并独立记录与旧画布记录，支持 `callId` 详情和 `offset`/`limit` 分页（默认 10、最多 50）；后者接收 `callId` 与可选用户成品直链 `url`，只恢复原成品，不重新生成、不修改节点输出。下载后由用户在调用记录窗口选择“使用结果”。工具返回公开字段，隐藏内部恢复地址和详情中的网址；取消或超时后须重读记录，不能推断下载已停止并自动重试。
+
+节点内通过 `useNode()` 的 `ai.getModelCalls(signal?)`、`ai.retryDownload(callId, url?, signal?)` 复用宿主记录与恢复接口；`ai.queryModelCall`、`ai.retrySaveModelCall` 供现有窗口查询原任务、补写终态。记录请求在开始时固定工作区、原调用画布标识和节点，不调用生成接口。Agent 新增的两个节点函数由共享生成模块注册，音频节点不增加这两个函数。
+
 ## 6\. 文件与媒体持久化
 
 files\.uploadFile\(file\) 自动在 assets/\<节点 ID\>/ 下创建随机文件，返回工作区相对路径。媒体输出的 url 保存这个路径；Blob URL 只用于预览，不写进画布 JSON。

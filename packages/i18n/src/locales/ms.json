@@ -3275,5 +3275,16 @@
   "正在调用 {0}": "Memanggil {0}",
   "调用已结束": "Panggilan tamat",
   "{0} 次失败": "{0} gagal",
-  "{0} 次中断": "{0} terganggu"
+  "{0} 次中断": "{0} terganggu",
+  "模型调用标识无效": "ID panggilan model tidak sah",
+  "该供应商尚未支持查询原任务": "Pembekal ini belum menyokong pertanyaan tugas sedia ada",
+  "查询原任务失败": "Gagal menyemak tugas sedia ada",
+  "上游任务 ID 无效": "ID tugas pembekal tidak sah",
+  "上游已返回成品，正在下载保存": "Hasil diterima daripada pembekal; sedang dimuat turun dan disimpan",
+  "上游已返回成品，本地下载或保存未完成；可在模型调用记录中重试下载，不会重新生成。\n": "上游已返回成品，本地下载或保存未完成；可在模型调用记录中重试下载，不会重新生成。\n",
+  "该调用仍在处理中，请等待完成": "Panggilan ini masih diproses. Sila tunggu sehingga selesai",
+  "没有可查询的上游任务 ID": "Tiada ID tugas pembekal untuk disemak",
+  "原任务未返回可下载的成品地址": "Tugas sedia ada tidak mengembalikan URL hasil yang boleh dimuat turun",
+  "上游已完成，点击重新下载保存成品；不会重新生成。": "Penjanaan selesai. Muat turun dan simpan hasil; tiada penjanaan baharu dimulakan.",
+  "没有可恢复的成品地址": "Tiada URL hasil untuk dipulihkan"
 }
