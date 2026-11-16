@@ -6,6 +6,7 @@
 
 知识库建立于 2026-11-10；此前已有功能的行为和验证见[主题维护](../readme.md#主题维护)。
 
+- 2026-11-15：[无图图片指令卡片收紧](imageCommandTextCards20261115.md)
 - 2026-11-14：[剩余通用方向完整转为宠物领域](imageCommandsPetCoverage20261114.md)
 - 2026-11-14：[完整通用图片指令迁入](imageCommandsGeneralImport20261114.md)
 - 2026-11-14：[第六批包装、开箱与品牌展示指令](imageCommandsSixthBatch20261114.md)

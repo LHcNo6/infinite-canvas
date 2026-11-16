@@ -29,10 +29,9 @@
         <div v-else-if="imageCommandsError" class="libraryStatus" role="alert"><p>{{ imageCommandsError }}</p><el-button @click="reload">重新加载</el-button></div>
         <div v-else-if="!filteredCommands.length" class="libraryStatus" role="status"><icon-search :size="24" aria-hidden="true" /><p>没有找到匹配的指令</p><el-button text @click="search = ''; category = ''; collection = '全部'">清除筛选</el-button></div>
         <div v-else class="commandGrid">
-          <button v-for="command in filteredCommands" :key="command.id" class="commandCard" type="button" :aria-label="`查看${command.name}指令`" @click="selected = command">
-            <span class="commandVisual">
-              <img v-if="previewImage(command.id)" :src="previewImage(command.id)" alt="" loading="lazy" decoding="async" width="640" height="640" />
-              <component :is="categoryIcon(command.category)" v-else :size="38" :strokeWidth="1.3" aria-hidden="true" />
+          <button v-for="command in filteredCommands" :key="command.id" class="commandCard" :class="{ noPreview: !previewImage(command.id) }" type="button" :aria-label="`查看${command.name}指令`" @click="selected = command">
+            <span v-if="previewImage(command.id)" class="commandVisual">
+              <img :src="previewImage(command.id)" alt="" loading="lazy" decoding="async" width="640" height="640" />
               <span class="commandCollection">{{ command.collection }}</span>
             </span>
             <span class="commandInfo">
@@ -143,6 +142,7 @@ onMounted(reload);
         display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
         .commandCard {
           display: flex; flex-direction: column; min-width: 0; padding: 0; overflow: hidden; border: 1px solid var(--el-border-color-lighter); border-radius: 15px; background: var(--el-bg-color); color: var(--el-text-color-primary); font-family: inherit; text-align: start; cursor: pointer; transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+          &.noPreview { align-self: start; }
           .commandVisual {
             position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 1; overflow: hidden; background: var(--el-fill-color-light); color: var(--el-text-color-secondary);
             img { display: block; width: 100%; height: 100%; object-fit: contain; }
