@@ -1,20 +1,20 @@
 ---
 name: petComedyScript
-description: Create or revise a comedy story, shots, and video plan up to 30 seconds for the user's pet. Produces text only; petComedyVideo uses it for canvas production.
+description: Write or revise spoken jokes, performance and a video plan up to 30 seconds for an anthropomorphic pet or an unspecified funny pet request. Text only; petComedyVideo uses it for production.
 metadata:
-  version: "1.0.0"
-  displayName: Write a Funny Pet Story
+  version: "1.1.0"
+  displayName: Write a Talking Pet Comedy Monologue
   author: Infinite Canvas
 ---
 
-# Write a Funny Pet Story
+# Write a Talking Pet Comedy Monologue
 
-Create a clear, producible short comedy from the user's actual pet image, personality, idea, or existing story. On its own return text only; when called by a workflow return the complete story, performance and asset needs. Do not operate the canvas or generate media. Preserve approved material except where revision is requested.
+Create a pet's spoken comedy monologue from the user's image, personality, topic or existing joke. Text-only use does not operate the canvas or generate media. Preserve supplied wording and approved scripts; change only what the user requests.
 
-Distinguish visible identity facts, user-supplied personality and proposals. Do not claim to have seen an inaccessible image; request accessible material when identity is essential. Preserve species, face, body, coat, markings and natural animal movement by default; use anthropomorphism, clothes or speech only as requested.
+Distinguish visible identity from supplied personality and creative proposals; do not claim to have seen an unreadable image. Preserve species, face, body, color and markings by default, and give the pet a point of view and personality. Clothing or stronger anthropomorphic styling is user-directed.
 
-Propose an original simple premise if none is supplied; otherwise preserve the user's intent. Default to vertical and about 20 seconds, up to 30 seconds, following explicit choices. Build one readable comic event: establish an expectation, let the pet act, show an unexpected outcome and leave room for reaction. Select contrast, changed repetition, misunderstanding or a final gag only when useful. Show the joke rather than explaining it; do not promise audience response.
+If no topic is given, select a relatable everyday situation and write an original monologue with a clear perspective, setup and specific comic reversal near the end, followed by a pause. Do not substitute an explanation, laughter or a claim of humor for a punchline, or add unrelated events to fill time. Preserve user-provided joke wording and punchline. Check that the spoken text makes sense without the picture and that the setup supports the punchline; do not guarantee it is funny. Allow enough time to deliver the words and pauses. Default to Chinese, vertical, about 20 seconds, maximum 30 seconds; explicit user choices prevail.
 
-For each continuous beat specify timing, start state, pet position and gaze, main action, prop contact, visible result, framing, sound and continuity. Simplify excessive dependent actions. Default to action and necessary ambience without dialogue; preserve requested speech, exact words, speaker and on/off-screen placement. Add music only when requested or creatively necessary.
+Default to one pet speaking on screen, with a stable camera, gaze, simple expression and minimal natural motion supporting the words. Specify speaker, exact dialogue, delivery, timing and the pause after the punchline. Preserve animal anatomy and avoid complex action or props competing with speech. Follow explicit choices for narration, language, characters and performance. Reuse real pet images; request a scene reference only when needed. Never invent image contents, reference numbers or model capabilities.
 
-Deliver title, duration and aspect ratio, identity anchors, story, timed visible beats and shots, sound, asset roles, risks and acceptance checks. Reuse the pet image; require a separate scene reference only when necessary. Mark missing images and model capabilities; never invent reference numbers or supported settings. The production workflow finalizes prompts for the actual model and input mode; a story-only request needs no model prompt.
+Deliver title, duration and aspect ratio, identity anchors, complete verbatim dialogue readable on its own, setup and punchline, timed performance and sound, asset roles, generation challenges and acceptance criteria. Speech accuracy, lip sync and timing require watching and listening to the actual result. The production workflow finalizes model prompts for the actual model and inputs; do not force a prompt into text-only requests.

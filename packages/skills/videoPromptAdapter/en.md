@@ -1,8 +1,8 @@
 ---
 name: videoPromptAdapter
-description: Use when an existing video plan or long-video segment plan needs prompts adapted to an exact model version and reference-input mode. Preserve established plot, verbatim dialogue, and asset roles; deliver a submittable prompt per segment with settings listed separately. Does not operate the canvas or generate media. Finalizes Seedance 2.5 funny pet and non-commerce interview shorts; other dedicated Seedance routes follow their workflows.
+description: Use when an existing video plan or long-video segment plan needs prompts adapted to an exact model version and reference-input mode. Preserve plot, verbatim dialogue and asset roles; deliver a complete prompt per segment with settings separately. Does not operate the canvas or generate media. Finalizes Seedance 2.5 talking pet comedy and non-commerce interview shorts; other dedicated Seedance routes follow their workflows.
 metadata:
-  version: "1.1.6"
+  version: "1.1.7"
   displayName: Adapt Video Plans to Model Prompts
   author: Infinite Canvas
 ---
@@ -32,7 +32,7 @@ Prefer readable official guidance above that matches the exact version and mode.
 | Wan 2.2 | `references/models/wan22/prompting.md` |
 | Wan Animate 2 | `references/models/wanAnimate2/prompting.md` |
 | Seedance 2.0 | `references/models/seedance2/prompting.md` |
-| Seedance 2.5 funny pet and non-commerce interview shorts | `references/models/seedance25/prompting.md` |
+| Seedance 2.5 talking pet comedy and non-commerce interview shorts | `references/models/seedance25/prompting.md` |
 | MiniMax H3 | `references/models/minimaxH3/prompting.md` |
 | LTX-2, LTX-2.3, LTX-2.5 | `references/models/ltx2/prompting.md`, `references/models/ltx23/prompting.md`, `references/models/ltx25/prompting.md`, respectively |
 
@@ -40,7 +40,7 @@ For third-party routing, find the real `videoPrompting` with `skillOperator(acti
 
 Third-party rules only organize prompts for their models. This skill, the caller, and approved story, exact dialogue, real references/sound, duration, authorization, and settings take precedence. If upstream single-line, default-duration, audio, or reference conventions conflict, preserve the user's goals and workflow requirements rather than dropping speech/references/shots or changing models. The workflow maps real references; sample tags such as `<Picture 1>` are not already bound.
 
-For Seedance 2.5 funny pet and non-commerce interview shorts, this skill finalizes using the third-party guide above; if unavailable or it does not cover the input mode, use the generic method and mark optimization unverified. For interviews preserve exact interviewer, pet and optional owner lines, on/off-screen attribution, question order, middle evidence and the final pause; do not turn the interview into a solo monologue or product presentation. `petCommercePromptSd25` finalizes Seedance 2.5 pet commerce shorts and long-video segments; `sd25-pe` finalizes ordinary Seedance 2.5 long-video segments; the caller's `workflow` PART A finalizes Seedance 2.0 long-video prompts. Do not rewrite those final prompts here. Model changes require the calling workflow to re-adapt affected segments and verify authorization.
+For Seedance 2.5 talking pet comedy and non-commerce interview shorts, this skill finalizes using the third-party guide above; if unavailable or it does not cover the input mode, use the generic method and mark optimization unverified. For interviews preserve exact interviewer, pet and optional owner lines, on/off-screen attribution, question order, middle evidence and the final pause; do not turn the interview into a solo monologue or product presentation. `petCommercePromptSd25` finalizes Seedance 2.5 pet commerce shorts and long-video segments; `sd25-pe` finalizes ordinary Seedance 2.5 long-video segments; the caller's `workflow` PART A finalizes Seedance 2.0 long-video prompts. Do not rewrite those final prompts here. Model changes require the calling workflow to re-adapt affected segments and verify authorization.
 
 ## Generic method
 

@@ -2,7 +2,7 @@
 
 2026-11-17：新增 `petInterviewVideo` 和 `aiPetShortVideoDirector` 1.0.0，中英文入口各保持同一技术名称；`videoPromptAdapter` 更新至 1.1.6，增加 Seedance 2.5 非带货采访。导演方法及采访完整示例保留各自资料语言，不代表已全文翻译；交付语言服从入口及用户要求。导演保留 Balance0014 作者署名和 MIT 许可，安装与验证见[本次变更](changes/petInterviewVideo20261117.md)。
 
-2026-11-17 新增 `petComedyScript` 和 `petComedyVideo` 中英文入口；版本与身份在各自两种语言间一致，按既有语言选择机制加载。验证与限制见[本次变更](changes/petComedyVideo20261117.md)。
+2026-11-17 `petComedyScript` 和 `petComedyVideo` 的中英文入口改为宠物拟人讲段子，保留技术标识并更新至 1.1.0；`videoPromptAdapter` 合并采访路径后更新至 1.1.7。验证与限制见[本次变更](changes/petTalkingComedy20261117.md)。
 
 2026-11-16：`canvas`、`workflow`、`longVideoWorkflow`、`petShortVideo` 中英文入口同步增加[预检、制作清单和关键版本](productionSafety.md)约定；有结构化工具时，新任务不另建重复 Markdown 台账。参考资料仍按原语言维护。
 
