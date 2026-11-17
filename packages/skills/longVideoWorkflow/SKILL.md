@@ -4,7 +4,7 @@ description: 制作超过 30 秒的视频，或继续、修订已有多段视频
 metadata:
   locales:
     en: en.md
-  version: "1.3.4"
+  version: "1.3.5"
   displayName: 长视频分段制作与合成
   author: 无限画布
 ---
@@ -65,7 +65,7 @@ Seedance 2.5 无其他参考且支持首帧模式时，以及 Seedance 2.0 和�
 
 使用节点实际提供的 `node:generateImage`、`node:generateVideo` 和状态工具，按照授权先生成缺失资产，再依次生成视频段。保存启动回执的 `attemptId`、`startedAt`，按实际 schema 调用 `node:waitGeneration({attemptId})`。画布工具内部合并连续等待：图片从启动起第5分钟检查本次模型调用记录一次，再等最多2.5分钟；视频第10分钟检查一次，再等最多5分钟。成功或失败立即返回，期间无需每30秒再次请求模型。收到 `waitBudgetExceeded` 时报告仍在运行、等待已达上限，保留任务且停止依赖链，不自动再次等待、取消或重生成；稍后继续先查询原任务。旧插件缺少生成元信息时按其实际单次等待合约操作并说明限制。
 
-每段 `node:waitGeneration` 返回本次 succeeded 后，还须调用 `node:waitLastFrame`：只有 succeeded、尾帧 `attemptId` 与本次启动回执一致、`videoUrl` 与本次视频输出一致、返回的尾帧节点和图片路径可读取，才可连接并绑定到下一段。尾帧 pending/running 时按每次最多30秒继续等待，累计10分钟仍运行则报告待续；failed/cancelled、缺失、来源不符或实际画面与授权计划冲突时暂停。尾帧失败可由用户决定后用 `node:extractLastFrame` 对当前视频重新提取，不重生视频。若无等待工具，读取状态并请用户稍后继续，不假定后台唤醒。画布需保持打开；取消、状态不明或节点卸载时停止依赖链并保留已有成果。生成明确失败时按本节恢复选择处理；后续新生成还须符合单独授权和开头上限。
+每段 `node:waitGeneration` 返回本次 succeeded 后，先对该视频节点调用 `node:extractLastFrame`，再调用 `node:waitLastFrame`：只有 succeeded、尾帧 `attemptId` 与本次启动回执一致、`videoUrl` 与本次视频输出一致、返回的尾帧节点和图片路径可读取，才可连接并绑定到下一段。尾帧 pending/running 时按每次最多30秒继续等待，累计10分钟仍运行则报告待续；failed/cancelled、缺失、来源不符或实际画面与授权计划冲突时暂停。尾帧失败可由用户决定后用 `node:extractLastFrame` 对当前视频重新提取，不重生视频。若缺少提取或等待工具，停止依赖链并说明限制，不假定后台唤醒。画布需保持打开；取消、状态不明或节点卸载时停止依赖链并保留已有成果。生成明确失败时按本节恢复选择处理；后续新生成还须符合单独授权和开头上限。
 
 记录各次尝试的节点、提示词、参数、参考、调用前输出、授权和终态。只有本次 `succeeded` 且实际输出可读取，才把它作为本次结果；若期间手动替换、结果归属不清或无法核实，停止采用并说明。用户稍后继续时重新发现画布及状态，先核实再决定是否启动，避免重复生成。
 

@@ -6,6 +6,12 @@
 
 知识库建立于 2026-11-10；此前已有功能的行为和验证见[主题维护](../readme.md#主题维护)。
 
+- 2026-11-17：[宠物家庭小糗事与 SD 专用定稿](petHomeMishapVideo20261117.md)
+- 2026-11-17：[短句同镜、逐镜预算与定稿复核](petDialogueDensity20261117.md)
+- 2026-11-17：[宠物视频内容密度、最短分镜与连续衔接](petVideoPacing20261117.md)
+- 2026-11-17：[长视频工作流按需提取尾帧](longVideoTailFrame20261117.md)
+- 2026-11-17：[宠物采访与 AI 宠物短视频导演](petInterviewVideo20261117.md)
+- 2026-11-17：[宠物拟人讲段子工作流](petTalkingComedy20261117.md)
 - 2026-11-17：[宠物搞笑短视频工作流](petComedyVideo20261117.md)
 - 2026-11-17：[本机 Bun 查找与开发服务](localBunDiscovery20261117.md)
 - 2026-11-16：[Agent 生成失败后的恢复选择与授权](agentFailureRecovery20261116.md)

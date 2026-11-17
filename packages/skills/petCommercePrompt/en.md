@@ -2,7 +2,7 @@
 name: petCommercePrompt
 description: Use for pet-product recommendation scripts, demonstrations, or pet-host sales dialogue and generation prompts. Turn pet identity, product facts, or an existing script into shot-by-shot performance, speech, asset image prompts, and a complete video prompt. Text only; does not create nodes or generate media. Prefer the dedicated Seedance 2.5 edition for that model.
 metadata:
-  version: "1.0.3"
+  version: "1.0.5"
   displayName: Write Pet Commerce Scripts and Prompts
   author: Infinite Canvas
 ---
@@ -26,13 +26,23 @@ Preserve the supplied pet identity, product facts, story, style, and dialogue. D
 
 ## 2. Plan speech before shots
 
-Default to 20–30 seconds unless the user or caller specifies a duration. This short-video plan is limited to 30 seconds; explain when a longer workflow is needed. Organize around a hook, product reveal, visible demonstration, and ending; combine or omit unnecessary beats. Start with performance or a problem rather than requiring an establishing wide shot. Let information, action, and speech determine shot count.
+Derive total duration from the content and shot budgets below, honoring an explicit user duration. This short-video plan is limited to 30 seconds; explain when a longer workflow is needed. Organize around a hook, product reveal, visible demonstration, and ending; combine or omit unnecessary beats. Start with performance or a problem rather than requiring an establishing wide shot. Let information, action, and speech determine shot count.
 
-Write dialogue that can be spoken naturally, reserve breathing, action, and sentence-ending pauses, then assign continuous shot intervals ending exactly at the planned total. Read-aloud estimates identify crowding, not guaranteed model behavior; use actual duration for existing audio. When speech is too long, reduce optional wording or allocate more time. Discuss conflicts involving approved wording or a strict duration instead of forcing accelerated delivery.
+Write dialogue that can be spoken naturally, budget necessary breathing and action, then assign continuous shot intervals ending exactly at the planned total. Read-aloud estimates identify crowding, not guaranteed model behavior; use actual duration for existing audio. When speech is too long, reduce optional wording or allocate more time. Discuss conflicts involving approved wording or a strict duration instead of forcing accelerated delivery.
 
 Give each shot one clear display objective and principal action, expressed as initial state → action → visible final state. When speech, contact, and complex camerawork compete, preserve speech and product readability by reducing secondary action or splitting shots. Static cameras and stable lighting are valid. Cut to add information; require neither a fixed shot count nor camera/environment motion in every shot.
 
 Read [Shot Writing and Examples](references/shotGuide.md) when writing complete shot prompts or revising action, speech, or product interaction. Finish each shot's action and sound before assembling one complete video prompt; do not leave a summary for the caller to expand.
+
+## Content and shot duration
+
+Write dialogue and necessary actions before grouping shots. Every shot lasts at least 4 seconds. Group short lines into two or more lines, a complete exchange and concurrent action within the same shot. A story beat does not require a cut. In a dialogue-led 4–6-second shot, use only one line when its natural spoken duration sustains that shot; otherwise continue with the next line instead of waiting for the next integer time block. Budget an action-led evidence shot by its necessary visible change, never by ear twitches, closed mouths or holding a pose. Initially estimate Chinese speech at about 4–5 characters per second; use actual supplied audio or a natural read in other languages. About 14–18 Chinese characters in a 4-second dialogue shot is a review aid, not a quota. Count concurrent speech and simple gestures once; budget necessary complex contact, movement and reveals separately.
+
+When content is sparse, first merge adjacent short lines, exchanges or causal actions. If needed and writing is permitted, add information serving the proposition, verified selling point, evidence or punchline. Derive duration from content instead of filling a default 20/30 seconds. Honor an explicit user duration with sufficient content; regroup supplied verbatim text without expanding it. Return conflicts among duration, fixed shot count and model capability to the caller rather than filling time with slow delivery, repetition or static holds.
+
+Connect dialogue naturally and reserve brief reactions only for comprehension, breathing or a decisive payoff. Ending states describe results and continuity without extra static display time. Carry ongoing action, gaze, product state or sound into the next shot at natural speed without resetting subjects and props. For each shot give its information, exact lines, action, time budget and handoff; review shots of at least 4 seconds, a continuous timeline, natural delivery and no waiting without new information.
+
+Before finalizing, give a compact per-shot budget: shot/duration, exact lines and natural spoken estimates per line, breathing/turn-taking, concurrent actions, actions that truly require separate time, and the purpose of any remainder. Exclude punctuation from Chinese character estimates. Aim for natural conversational breaths of roughly 0.2–0.5 seconds; explain how a speech-free interval over about 0.5 seconds advances information or evidence, or merge, add permitted useful content or rebudget. These are planning/review aids, not precise model guarantees; never force overlapping speech, rushed words or accelerated source audio to meet them. A closed mouth identifies the non-speaker; it does not instruct additional waiting.
 
 ## 3. Assets and reference responsibilities
 
@@ -44,9 +54,9 @@ Use identifiable asset names and sources in plans. The workflow maps execution t
 
 ## 4. Speech and sound
 
-For commerce, default to the pet speaking on camera in the current interface language, with a voice consistent with its persona across shots. An explicitly requested language, voice, or off-screen narration takes precedence. For each line specify speaker, exact words, timing, delivery, pauses, and visible behavior before, during, and after speaking. Separate dialogue, ambience, action effects, and music in a sound section. Add background music only when requested by the user or caller; otherwise retain necessary dialogue and ambience.
+For commerce, default to the pet speaking on camera in the current interface language, with a voice consistent with its persona across shots. An explicitly requested language, voice, or off-screen narration takes precedence. For each line specify speaker, exact words, timing, delivery, necessary brief reactions, and concurrent visible action. Separate dialogue, ambience, action effects, and music in a sound section. Add background music only when requested by the user or caller; otherwise retain necessary dialogue and ambience.
 
-For on-screen speech, describe mouth movement matching the words, mouth closure at sentence endings, and silence from other characters. Preserve animal muzzle anatomy. Random mouth movement or added narration is not verified lip sync. Off-screen narration must not drive the pet's mouth. If spoken audio already exists, make it the sole dialogue source and voice/rhythm reference, map it through the actual interface, keep its transcript separately in the review plan, and avoid generating a duplicate voice track.
+For on-screen speech, describe mouth movement matching the words, closed mouths while not speaking and natural turn-taking. Preserve animal muzzle anatomy. Random mouth movement or added narration is not verified lip sync. Off-screen narration must not drive the pet's mouth. If spoken audio already exists, make it the sole dialogue source and voice/rhythm reference, map it through the actual interface, keep its transcript separately in the review plan, and avoid generating a duplicate voice track.
 
 If the interface explicitly lacks necessary native sound or audio inputs, identify the conflict and return it to the workflow. Unknown speech, lip-sync, or timing quality preserves the user's goal and prompt, marked unverified, for an authorized attempt. Unknown does not mean unsupported or guaranteed. Do not silently substitute silence or narration or assume post-production speech/lip-sync tools exist.
 

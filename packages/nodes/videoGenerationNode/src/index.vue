@@ -512,7 +512,7 @@ async function startGeneration() {
   generationController = controller;
   data.value.lastFrameRecord = undefined;
   data.value.lastGenerationRecord = undefined;
-  frameStatus.value = "pending";
+  frameStatus.value = "idle";
   frameError.value = "";
   // ACT: 工具立即返回，任务由节点持有，停止或卸载时取消。
   generation = generationState.run(call => workspace
@@ -527,8 +527,7 @@ async function startGeneration() {
       outputs.value.video = { dataType: "VIDEO", value: { url: result.path, mimeType: result.mimeType } };
       data.value.lastGenerationRecord = { attemptId, videoUrl: result.path, videoMimeType: result.mimeType };
     }), attemptId)
-    .then(() => extractFrame())
-    .catch((error) => { frameStatus.value = "failed"; frameError.value = "视频生成失败，未提取尾帧"; showNodeError(error, "视频生成失败", { label: "打开调用记录与任务恢复", run: () => { callsVisible.value = true; } }); })
+    .catch((error) => { showNodeError(error, "视频生成失败", { label: "打开调用记录与任务恢复", run: () => { callsVisible.value = true; } }); })
     .finally(() => {
       generationController = undefined;
     });
@@ -690,7 +689,7 @@ nodeTools.register({
 });
 nodeTools.register({
   name: "extractLastFrame",
-  description: "对当前视频重新提取尾帧，不启动视频生成；通过 waitLastFrame 查询结果",
+  description: "对当前视频提取尾帧，不启动视频生成；通过 waitLastFrame 查询结果",
   parameters: z.strictObject({}),
   execute() {
     if (generating.value || uploading.value || deleting.value || extractingFrame.value || !outputFile.value) throw new Error("当前无法提取尾帧，请先确认视频和节点状态");
