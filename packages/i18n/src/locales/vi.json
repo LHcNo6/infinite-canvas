@@ -3288,5 +3288,7 @@
   "没有可查询的上游任务 ID": "Không có ID tác vụ của nhà cung cấp để truy vấn",
   "原任务未返回可下载的成品地址": "Tác vụ hiện có không trả về URL kết quả có thể tải xuống",
   "上游已完成，点击重新下载保存成品；不会重新生成。": "Đã tạo xong. Hãy tải xuống và lưu kết quả; không gửi yêu cầu tạo mới.",
-  "没有可恢复的成品地址": "Không có URL kết quả để khôi phục"
+  "没有可恢复的成品地址": "Không có URL kết quả để khôi phục",
+  "参考图片内容为空": "Ảnh tham chiếu trống",
+  "参考图片不能超过100MB": "Ảnh tham chiếu không được vượt quá 100 MB"
 }

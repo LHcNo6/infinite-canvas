@@ -10,7 +10,7 @@
     <div class="generationSettings nodrag nopan nowheel" @click.stop @pointerdown.stop @mousedown.stop @dblclick.stop @keydown.stop="onKeydown" @wheel.stop>
       <div class="currentSettings" role="status" aria-live="polite">
         <span>当前设置</span><strong>{{ summary }}</strong>
-        <span>{{ ratioLocked ? '首尾帧或延长模式使用自适应画幅；选择后即时生效' : autoDuration ? '自动匹配输入视频时长；选择后即时生效' : '选择后即时生效' }}</span>
+        <span>{{ ratioLocked ? '首尾帧或延长模式使用自适应画幅；选择后即时生效' : autoDuration ? isSeedanceFast ? '智能生成时长；选择后即时生效' : '自动匹配输入视频时长；选择后即时生效' : '选择后即时生效' }}</span>
         <button type="button" class="closeButton" aria-label="收起视频参数" @click="settingsVisible = false">收起</button>
       </div>
       <div v-if="modes.length" class="sectionLabel">生成模式</div>
@@ -67,16 +67,17 @@ const mode = defineModel<string>("mode", { required: true });
 const generateAudio = defineModel<boolean>("generateAudio", { required: true });
 const other = defineModel<Record<string, unknown>>("other", { required: true });
 const isSeedance = computed(() => props.model?.providerId === "antaixin" && props.model?.modelId === "seedance-2.5-video");
+const isSeedanceFast = computed(() => props.model?.providerId === "antaixin" && props.model?.modelId === "seedance-2.0-video-fast-enhance");
 const isUnifiedVideo = computed(() => props.model?.providerId === "antaixin" && ["wan-3.0", "minimax-h3"].includes(props.model?.modelId ?? ""));
 const selectedMode = computed(() => { try { return JSON.parse(mode.value); } catch { return mode.value; } });
 const isExtend = computed(() => isSeedance.value && (other.value?.omni_reference_task_type === "extend" || other.value?.video_extend === true));
 const ratioLocked = computed(() => isSeedance.value && (isExtend.value || ["startEndRequired", "endFrameOptional", "startFrameOptional"].includes(selectedMode.value)));
-const effectiveRatio = computed(() => ratioLocked.value ? "adaptive" : (isSeedance.value || isUnifiedVideo.value) && typeof other.value?.ratio === "string" && other.value.ratio ? other.value.ratio : ratio.value);
+const effectiveRatio = computed(() => ratioLocked.value ? "adaptive" : (isSeedance.value || isSeedanceFast.value || isUnifiedVideo.value) && typeof other.value?.ratio === "string" && other.value.ratio ? other.value.ratio : ratio.value);
 const availableRatios = computed(() => {
   const options = props.model?.rules?.find(item => item.field === "ratio")?.options;
-  return [...new Set([...props.ratios, ...((isSeedance.value || isUnifiedVideo.value) && Array.isArray(options) ? options.map(item => String(item.value)).filter(Boolean) : [])])];
+  return [...new Set([...props.ratios, ...((isSeedance.value || isSeedanceFast.value || isUnifiedVideo.value) && Array.isArray(options) ? options.map(item => String(item.value)).filter(Boolean) : [])])];
 });
-const autoDuration = computed(() => isSeedance.value && other.value?.autoDuration === true);
+const autoDuration = computed(() => (isSeedance.value || isSeedanceFast.value) && other.value?.autoDuration === true);
 const summary = computed(() => [effectiveRatio.value === "adaptive" ? "自适应" : effectiveRatio.value, resolution.value, autoDuration.value ? "自动时长" : duration.value ? `${duration.value}秒` : ""].filter(Boolean).join(" · "));
 const secondary = computed(() => [isExtend.value ? "视频延长" : Array.isArray(selectedMode.value) ? "混合参考" : modeLabels[selectedMode.value] ?? "选择模式", props.model?.audio === "optional" ? generateAudio.value ? "生成音频" : "无音轨" : props.model?.audio === true ? "生成音频" : ""].filter(Boolean).join(" · "));
 const modeLabels: Record<string, string> = {
@@ -97,7 +98,7 @@ function resolutionsFor(value: number | undefined) {
 function selectRatio(value: string) {
   if (ratioLocked.value && value !== "adaptive") return;
   if (props.ratios.includes(value)) ratio.value = value;
-  if (isSeedance.value || isUnifiedVideo.value) other.value = { ...other.value, ratio: props.ratios.includes(value) ? "" : value };
+  if (isSeedance.value || isSeedanceFast.value || isUnifiedVideo.value) other.value = { ...other.value, ratio: props.ratios.includes(value) ? "" : value };
 }
 
 function onKeydown(event: KeyboardEvent) { if (event.key === "Escape") settingsVisible.value = false; }

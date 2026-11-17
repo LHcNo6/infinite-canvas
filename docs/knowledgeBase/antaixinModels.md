@@ -1,6 +1,6 @@
 # 安泰信媒体模型维护说明
 
-本文记录 2026-11-04 的模型列表发现功能。相关源码目前属于本地工作区改动；运行版本、上游模型和账号权限可能变化，应以实际环境为准。
+本文维护安泰信模型发现与生成适配，最近于 2026-11-16 加入 Seedance 2.0 Fast Enhance 和 Seedream 5.0 Lite。运行版本、上游模型和账号权限可能变化，应以实际环境为准。
 
 ## 入口与数据流
 
@@ -20,6 +20,41 @@
 Wan 3.0 和 MiniMax H3 使用 `/v1/videos` 创建任务及同 ID 查询，不自动重复提交。视频和音频参考须提供 HTTPS 直链，并按顺序填写时长；本地不会验证直链实际内容与时长，也不会验证 Wan 3.0 图片透明通道。无原始 URL 的本地图片通过现有安泰信素材上传接口转换；该上传接口限制 10MB，Grok 会尝试压缩图片，视频参考图不会压缩。上游对链接可访问性和素材的最终校验仍可能失败。新识别且没有已有配置的模型标记为“生成协议待适配”。
 
 ## 操作与验证
+
+### 2026-11-16：手动查询原视频任务
+
+安泰信4.2.2新增`queryVideoTask`，仅GET已存在任务，支持Seedance 2.5、Fast、Wan 3.0及MiniMax H3。节点调用记录提供手动查询与查询回执；旧安泰信Seedance错误详情中的`task_...`编号可作为兼容来源。没有任务ID时明确提示无法查询，不重发创建接口。成功查询只保存结果地址，由用户另行下载；原记录的错误详情继续保留，已有本地结果不因查询失败而被删除。
+
+对用户报告的`Service is busy or quota reached`任务进行了真实只读复查，仍返回`status=failed`、`error.code=GenerationFailed`，没有视频URL。此消息表示上游失败，不能区分平台繁忙和具体账户配额原因；重新查询不会重启原任务，也不能承诺免除原任务费用。详见[变更记录](changes/antaixinManualQuery20261116.md)。
+
+### 2026-11-16：下载恢复及视频提交保护
+
+适配器 `4.2.1` 对 Seedance 2.5 的本地图片、data 输入和公开 URL 图片，在上传/收费提交前检查宽高均为300–6000px；URL 图片需能被本机读取，读取最多30秒/100MB。压缩上传时保留最短边300px，不自动放大不合格素材。Fast 沿用其原有校验，asset 素材仍交上游核验，不能把2.5的错误当作Fast的完整尺寸规范。
+
+视频获得任务 ID 后通过宿主回调先持久保存再轮询。提交的5xx/408保留有界、脱敏错误摘要及可用的Request ID/CF-Ray，状态标记为未知，不自动重复POST。任务ID未知时仍需平台核对是否受理/计费；本地修复不能修正上游计价或退款。
+
+八次图片调用经后台截图确认均成功；本机失败发生在CloudFront下载。成品GET加入有限重试和未配置网络时的系统代理备用通路；URL成品先写入独立调用记录，可在重启后只下载恢复。详见[修复记录](changes/antaixinResultRecovery20261116.md)。
+
+### 2026-11-16：BytePlus Fast 视频与 Lite 图片
+
+适配器版本为 `4.2.0`，新增以下配置与请求分支；文档依据为[安泰信官方 API Reference](https://www.antaixin.ai/api-docs) 中对应的 BytePlus 模型页面。
+
+| 模型 | 当前行为 |
+| --- | --- |
+| `seedance-2.0-video-fast-enhance` | 使用 `https://www.antaixin.ai/v1/video/generations` 提交，随后 GET 同一路径下的任务 ID；读取 `status=succeeded` 的 `content.video_url`。支持 4–15 秒、`duration=-1` 智能时长、480p/720p、可选音频、水印、首帧、首尾帧与多模态参考。 |
+| `seedream-5.0-lite` | 使用 `https://images-api.antaixin.ai/api/v3/images/generations`，支持 2K/3K、1–4 张输出、最多 14 张参考图；适配器也接受 `seedream-5-0-lite-260128` 别名。成功后直接读取图片数组，实际返回数量可少于请求数量，沿用宿主下载保存逻辑。 |
+
+Fast 使用 BytePlus `content` 数组，本地图片直接转为 data URL，不经过旧上传接口；适配器的图片、视频、音频 URL 输入均允许 `asset://asset-xxxxx`，图片还允许 data URL。单图模式映射为 `first_frame`，多图模式使用 `reference_image`，首尾帧不与其他参考混用。当前节点能力配置上限为 9 图、3 视频、3 音频；视频/音频本地文件仍需来源 URL 或在高级配置中按顺序提供公网 URL / asset 引用。图片 asset 引用可通过适配器 URL 输入传入，节点未增加 asset 选择器。Fast 不使用 Seedance 2.5 的视频延长、种子或帧率请求字段。
+
+高级配置 `autoDuration` 映射为 `duration=-1`，参数摘要显示自动时长，并禁用手动时长选项；画幅覆盖及自适应比例同步到摘要。`return_last_frame` 仅传给上游，请求其在支持时返回尾帧 URL；宿主仍保存视频结果，不会额外保存这个 URL 或自动创建尾帧图片。需要本地尾帧时继续使用现有[尾帧提取](videoLastFrame.md)流程。
+
+Lite 复用 Seedream 的 PNG/JPEG/WebP、每张 20MB、32–8000px 校验及 64MB 请求体上限；图片比例写入提示词，不承诺精确尺寸比例。未确认 Lite 水印能力，沿用 Seedream 禁用开启水印的约束。图片 POST 不自动重试；视频 POST 也只提交一次，已知任务 ID 后的暂时性网络/408/429/5xx 错误只重试同一任务 GET。
+
+本地已保留原安装模型列表并更新 `data/providers/antaixin.ts`（25 → 26 项，Lite 原已有待适配条目），源码构建副本位于 `build/providers/media/antaixin.ts`；其他数据目录不会自动覆盖。图片和视频节点均完成开发产物同步，Web 与 Server 已重启。已通过适配器独立 TypeScript 检查、Server 和两个节点的类型检查与构建、运行时模型接口、网页和节点产物 HTTP 可访问性、Ego Lite 设置页展示核对。未执行收费生成，未验证真实首尾帧、多模态、asset 权限、尾帧 URL 和图片输出数量；未验证其他安装环境。
+
+变更记录：[Fast 视频与 Lite 图片模型接入](changes/antaixinByteplusModels20261116.md)。
+
+### 2026-11-04：模型列表发现验证
 
 源码后端载入最新改动后，在媒体模型设置中配置安泰信 API Key，点击该供应商的“获取模型”；该操作会写入当前数据目录下的供应商文件。获取失败时检查服务端错误、账号权限和模型列表地址；更新文件后刷新设置页面，并检查节点模型列表。不要在文档或日志中记录 API Key。
 

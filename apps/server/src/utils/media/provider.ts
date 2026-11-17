@@ -67,13 +67,27 @@ function mediaErrorMessage(value: unknown, config: Record<string, unknown>, dept
     .slice(0, 4000);
 }
 
-function createMediaTools(fetcher: typeof fetch = fetch): ProviderTools["media"] {
+function createMediaTools(fetcher: typeof fetch = fetch, signal?: AbortSignal): ProviderTools["media"] {
   async function bytes(input: MediaInput) {
     if (input.type === "base64") return Buffer.from(input.data.replace(/^data:[^;]+;base64,/, ""), "base64");
     if (input.type === "binary") return Buffer.from(input.data);
-    const response = await fetcher(input.url);
-    if (!response.ok) throw new Error(t`读取图片失败：HTTP ${response.status}`);
-    return Buffer.from(await response.arrayBuffer());
+    const deadline = AbortSignal.timeout(30000);
+    const response = await fetcher(input.url, { signal: signal ? AbortSignal.any([signal, deadline]) : deadline });
+    if (!response.ok) { await response.body?.cancel(); throw new Error(t`读取图片失败：HTTP ${response.status}`); }
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("参考图片内容为空");
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > 100 * 1048576) throw new Error("参考图片不能超过100MB");
+        chunks.push(value);
+      }
+    } finally { await reader.cancel(); }
+    return Buffer.concat(chunks, size);
   }
 
   return {
@@ -431,7 +445,7 @@ export async function loadMediaProviderSource(source: string, config: Record<str
       hash: Bun.hash,
       errorMessage: (value: unknown) => mediaErrorMessage(value, providerConfig),
       image: Bun.Image,
-      media: createMediaTools(fetchRequest),
+      media: createMediaTools(fetchRequest, signal),
       audio: { convert: (input: Uint8Array, options: AudioConvertOptions) => convertAudio(input, options, signal) },
       ffmpeg: async () => {
         if (!cwd) throw new Error("当前操作没有工作目录，无法使用 FFmpeg");

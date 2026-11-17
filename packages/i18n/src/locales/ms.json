@@ -3286,5 +3286,7 @@
   "没有可查询的上游任务 ID": "Tiada ID tugas pembekal untuk disemak",
   "原任务未返回可下载的成品地址": "Tugas sedia ada tidak mengembalikan URL hasil yang boleh dimuat turun",
   "上游已完成，点击重新下载保存成品；不会重新生成。": "Penjanaan selesai. Muat turun dan simpan hasil; tiada penjanaan baharu dimulakan.",
-  "没有可恢复的成品地址": "Tiada URL hasil untuk dipulihkan"
+  "没有可恢复的成品地址": "Tiada URL hasil untuk dipulihkan",
+  "参考图片内容为空": "Imej rujukan kosong",
+  "参考图片不能超过100MB": "Imej rujukan tidak boleh melebihi 100 MB"
 }

@@ -3286,5 +3286,7 @@
   "没有可查询的上游任务 ID": "Walang task ID ng provider na maaaring i-query",
   "原任务未返回可下载的成品地址": "Walang ibinalik na mada-download na URL ng resulta ang kasalukuyang gawain",
   "上游已完成，点击重新下载保存成品；不会重新生成。": "Tapos na ang pagbuo. I-download at i-save ang resulta; walang bagong pagbuong isusumite.",
-  "没有可恢复的成品地址": "Walang URL ng resulta na maaaring mabawi"
+  "没有可恢复的成品地址": "Walang URL ng resulta na maaaring mabawi",
+  "参考图片内容为空": "Walang laman ang reference image",
+  "参考图片不能超过100MB": "Hindi dapat lumampas sa 100 MB ang reference image"
 }

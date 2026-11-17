@@ -3288,5 +3288,7 @@
   "没有可查询的上游任务 ID": "Sorgulanabilecek sağlayıcı görev kimliği yok",
   "原任务未返回可下载的成品地址": "Mevcut görev indirilebilir bir sonuç adresi döndürmedi",
   "上游已完成，点击重新下载保存成品；不会重新生成。": "Üretim tamamlandı. Sonucu indirip kaydedin; yeni üretim başlatılmaz.",
-  "没有可恢复的成品地址": "Kurtarılabilecek bir sonuç adresi yok"
+  "没有可恢复的成品地址": "Kurtarılabilecek bir sonuç adresi yok",
+  "参考图片内容为空": "Referans görseli boş",
+  "参考图片不能超过100MB": "Referans görseli 100 MB boyutunu aşamaz"
 }

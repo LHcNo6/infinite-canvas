@@ -3286,5 +3286,7 @@
   "没有可查询的上游任务 ID": "Tidak ada ID tugas penyedia untuk diperiksa",
   "原任务未返回可下载的成品地址": "Tugas yang ada tidak mengembalikan URL hasil yang dapat diunduh",
   "上游已完成，点击重新下载保存成品；不会重新生成。": "Pembuatan selesai. Unduh dan simpan hasilnya; tidak ada pembuatan baru.",
-  "没有可恢复的成品地址": "Tidak ada URL hasil untuk dipulihkan"
+  "没有可恢复的成品地址": "Tidak ada URL hasil untuk dipulihkan",
+  "参考图片内容为空": "Gambar referensi kosong",
+  "参考图片不能超过100MB": "Gambar referensi tidak boleh melebihi 100 MB"
 }

@@ -143,7 +143,8 @@ function booleanValue(value:unknown,label:string):boolean {
   if(typeof value!=="boolean") throw new Error(`${label}必须为布尔值`);
   return value;
 }
-function publicUrl(value:unknown,label:string):string {
+function publicUrl(value:unknown,label:string,allowAsset=false):string {
+  if(allowAsset && typeof value==="string" && /^asset:\/\/asset-[a-zA-Z0-9-]+$/.test(value)) return value;
   if(typeof value!=="string" || value.length>16384) throw new Error(`${label}需要有效公网 HTTP(S) URL`);
   let url:URL;
   try {url=new URL(value);} catch {throw new Error(`${label}需要有效公网 HTTP(S) URL`);}
@@ -157,8 +158,17 @@ function inputBytes(input:MediaInput):Buffer {
   if(!raw || raw.length>4*Math.ceil(20*1048576/3) || !/^[a-zA-Z0-9+/]*={0,2}$/.test(raw) || raw.length%4===1) throw new Error("图片 Base64 内容无效或超过20MB");
   return Buffer.from(raw,"base64");
 }
-async function checkImage(context:Context,input:MediaInput,label:string):Promise<void> {
-  if(input.type==="url") {publicUrl(input.url,label);return;}
+async function checkImage(context:Context,input:MediaInput,label:string,allowAsset=false,videoDimensions=false):Promise<void> {
+  if(input.type==="url") {
+    const inline=allowAsset && /^data:(image\/(?:png|jpeg|webp));base64,([\s\S]+)$/.exec(input.url);
+    if(inline) return checkImage(context,{type:"base64",data:inline[2],mimeType:inline[1]},label,allowAsset,videoDimensions);
+    publicUrl(input.url,label,allowAsset);
+    if(!videoDimensions || input.url.startsWith("asset://")) return;
+    if(!context.tool.media?.inspectImage) throw new Error("请更新宿主后再提交视频，以便检查参考图尺寸；生成任务尚未提交");
+    const meta=await context.tool.media.inspectImage(input);
+    if(Math.min(meta.width,meta.height)<300 || Math.max(meta.width,meta.height)>6000) throw new Error(`${label}尺寸为 ${meta.width}×${meta.height}；Seedance 2.5 的宽高均须在300–6000像素之间，请更换参考图；生成任务尚未提交`);
+    return;
+  }
   const bytes=inputBytes(input);
   const mime=input.mimeType?.toLowerCase().split(';')[0];
   const detected=bytes[0]===0x89 && bytes.subarray(1,4).toString()==="PNG" ? "image/png"
@@ -168,8 +178,9 @@ async function checkImage(context:Context,input:MediaInput,label:string):Promise
   if(!bytes.length || bytes.length>20*1048576) throw new Error(`${label}不能为空且不能超过20MB`);
   if(context.tool.media?.inspectImage) {
     const meta=await context.tool.media.inspectImage({type:"binary",data:bytes,mimeType:mime});
+    if(videoDimensions && (Math.min(meta.width,meta.height)<300 || Math.max(meta.width,meta.height)>6000)) throw new Error(`${label}尺寸为 ${meta.width}×${meta.height}；Seedance 2.5 的宽高均须在300–6000像素之间，请更换参考图；生成任务尚未提交`);
     if(Math.min(meta.width,meta.height)<32 || Math.max(meta.width,meta.height)>8000) throw new Error(`${label}最长边须≤8000像素、最短边须≥32像素`);
-  }
+  } else if(videoDimensions) throw new Error("请更新宿主后再提交视频，以便检查参考图尺寸；生成任务尚未提交");
 }
 async function generateFlare(context: Context, request: ImageRequest, apiKey: string): Promise<MediaAsset[]> {
   if (!request.prompt?.trim()) throw new Error("提示词不能为空");
@@ -296,11 +307,11 @@ async function generateOtherImage(context: Context, request: ImageRequest, apiKe
   if (!assets.length) throw new Error("图片接口未返回有效图片");
   return assets;
 }
-async function uploadImage(context:Context,input:MediaInput,apiKey:string,label:string,compress=true):Promise<string> {
+async function uploadImage(context:Context,input:MediaInput,apiKey:string,label:string,compress=true,minDimension=32):Promise<string> {
   let bytes=inputBytes(input);
   if(compress && bytes.length>1048576 && context.tool.media?.resizeImage) {
     const meta=await context.tool.media.inspectImage(input);
-    const scale=Math.min(1,2048/Math.max(meta.width,meta.height));
+    const scale=Math.min(1,Math.max(minDimension/Math.min(meta.width,meta.height),2048/Math.max(meta.width,meta.height)));
     const resized=await context.tool.media.resizeImage(input,{width:Math.max(32,Math.round(meta.width*scale)),height:Math.max(32,Math.round(meta.height*scale)),format:"webp",quality:90});
     const smaller=inputBytes(resized);
     if(smaller.length<bytes.length) {input=resized;bytes=smaller;}
@@ -322,19 +333,19 @@ async function uploadImage(context:Context,input:MediaInput,apiKey:string,label:
   const url=path ? new URL(path,"https://antaixin.ai").href : result?.data?.url ?? result?.url;
   try {return publicUrl(url,label);} catch {throw new Error(`${label}上传未返回可用的公网 URL；生成任务尚未提交`);}
 }
-function urlList(value:unknown,label:string):string[] {
+function urlList(value:unknown,label:string,allowAsset=false):string[] {
   if(value===undefined || value==="") return [];
   const values=typeof value==="string" ? value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean) : Array.isArray(value)?value:[];
   if(!Array.isArray(value) && typeof value!=="string") throw new Error(`${label} URL 必须逐行填写`);
-  return values.map((v,i)=>publicUrl(v,`${label} ${i+1}`));
+  return values.map((v,i)=>publicUrl(v,`${label} ${i+1}`,allowAsset));
 }
-function publicReferences(inputs:MediaInput[]|undefined,override:unknown,label:string):MediaInput[] {
-  const urls=urlList(override,label);
+function publicReferences(inputs:MediaInput[]|undefined,override:unknown,label:string,allowAsset=false):MediaInput[] {
+  const urls=urlList(override,label,allowAsset);
   if(!inputs?.length) return urls.map(url=>({type:"url",url}));
   if(urls.length && urls.length!==inputs.length) throw new Error(`${label} URL 数量须与连线数量相同，并保持顺序`);
   return inputs.map((input,index)=>{
     if(urls[index]) return {type:"url",url:urls[index]};
-    if(input.type==="url") return {...input,url:publicUrl(input.url,`${label} ${index+1}`)};
+    if(input.type==="url") return {...input,url:publicUrl(input.url,`${label} ${index+1}`,allowAsset)};
     throw new Error(`参考${label} ${index+1} 缺少公网 URL。该接口不接受本地${label}的 Base64；请在节点设置中按连线顺序填写参考${label}公网 URL`);
   });
 }
@@ -450,9 +461,9 @@ async function generateUnifiedVideo(context: Context, request: VideoRequest, api
 export default {
   id: "antaixin",
   label: "安泰信 (Antaixin)",
-  version: "4.1.2",
+  version: "4.2.2",
   modelsUrl: "https://www.antaixin.ai/v1/models",
-  readme: "Seedream：1K/2K，最多10张参考图；图片比例以提示词约束，当前图片接口未声明独立比例参数。Seedance：4–30秒、可选音频、首尾帧与多模态参考；旧图片先上传安泰信再提交URL。视频/音频参考须提供公网URL；生成结果可复用来源链接。",
+  readme: "Seedream Pro：1K/2K，最多10张参考图；Lite：2K/3K，最多14张参考图。图片比例以提示词约束，接口未声明独立比例参数。Seedance 2.0 Fast Enhance：4–15秒或智能时长、480p/720p、可选音频、首尾帧与多模态参考，支持图片 Base64 与 asset:// 引用，按 Token 计费。Seedance 2.5：4–30秒，旧图片先上传安泰信再提交URL。视频/音频参考须提供公网URL或模型支持的 asset://；生成结果可复用来源链接。",
   rules: [
     {
       type: "input",
@@ -463,6 +474,25 @@ export default {
     }
   ],
   models: [
+  {
+    id: "seedream-5.0-lite", label: "Seedream 5.0 Lite（2K / 3K，最多14张参考图）", type: "image",
+    mode: ["text", "singleImage", "multiReference"], imageSizes: ["2K", "3K"],
+    imageRatios: ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "21:9"],
+    rules: [{ type: "inputNumber", field: "n", title: "生成数量", value: 1, props: { min: 1, max: 4, precision: 0 } }]
+  },
+  {
+    id: "seedance-2.0-video-fast-enhance", label: "BytePlus Seedance 2.0 Fast Enhance", type: "video", audio: "optional",
+    mode: ["text", "singleImage", "endFrameOptional", "startEndRequired", ["imageReference:9", "videoReference:3", "audioReference:3"]],
+    durationResolutionMap: [{ duration: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], resolution: ["480p", "720p"] }],
+    rules: [
+      { type: "switch", field: "autoDuration", title: "智能时长（duration=-1）", value: false },
+      { type: "select", field: "ratio", title: "视频画幅（覆盖通用比例）", value: "", options: [{ label: "跟随通用比例", value: "" }, { label: "adaptive", value: "adaptive" }, { label: "21:9", value: "21:9" }] },
+      { type: "switch", field: "return_last_frame", title: "请求返回尾帧 URL（以上游支持为准）", value: false },
+      { type: "switch", field: "watermark", title: "水印", value: false },
+      { type: "input", field: "referenceVideoUrls", title: "参考视频 URL 或 asset://（按顺序每行一个）", value: "", props: { type: "textarea" } },
+      { type: "input", field: "referenceAudioUrls", title: "参考音频 URL 或 asset://（按顺序每行一个）", value: "", props: { type: "textarea" } }
+    ]
+  },
   {
     id: "kling-image-o1", label: "Kling Image O1（最多10张参考图）", type: "image", mode: ["text", "singleImage", "multiReference"],
     imageSizes: ["1k", "2k", "auto"], imageRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3", "21:9"],
@@ -786,14 +816,15 @@ export default {
 
     if (["gpt-image-2.5-flare", "gpt-image-2.5-sunburst"].includes(request.model)) return generateFlare(this, request, apiKey);
     if (["nano-banana-2", "wan2.7-image-pro", "grok-imagine-image-2.0", "kling-image-o1"].includes(request.model)) return generateOtherImage(this, request, apiKey);
-    if (request.model !== "seedream-5.0-pro") throw new Error("该安泰信模型的图片生成协议尚未适配");
+    const lite = ["seedream-5.0-lite", "seedream-5-0-lite-260128"].includes(request.model);
+    if (!lite && request.model !== "seedream-5.0-pro") throw new Error("该安泰信模型的图片生成协议尚未适配");
     if (!request.prompt?.trim() || request.prompt.length > 5000) {
       throw new Error("提示词不能为空且不能超过 5000 字符");
     }
 
     const options=request.other ?? {};
-    const size=(request.size ?? "1K").toUpperCase();
-    if(!["1K","2K"].includes(size)) throw new Error("Seedream 仅支持 1K / 2K");
+    const size=(request.size ?? (lite ? "2K" : "1K")).toUpperCase();
+    if(!(lite ? ["2K","3K"] : ["1K","2K"]).includes(size)) throw new Error(lite ? "Seedream Lite 仅支持 2K / 3K" : "Seedream Pro 仅支持 1K / 2K");
     const n=request.n ?? options.n ?? 1;
     integer(n,1,4,"图片生成数量");
     const ratio=request.ratio;
@@ -805,7 +836,8 @@ export default {
     if(options.watermark!==undefined && booleanValue(options.watermark,"水印")) throw new Error("当前 Seedream 模型不支持水印参数");
     if(request.mask) throw new Error("当前 Seedream 接口不支持 mask，请使用参考图编辑");
     if(request.images?.length) {
-      if(request.images.length>10) throw new Error("最多支持 10 张参考图");
+      const limit=lite ? 14 : 10;
+      if(request.images.length>limit) throw new Error(`最多支持 ${limit} 张参考图`);
       for(let i=0;i<request.images.length;i++) {
         await checkImage(this,request.images[i],`图片参考 ${i+1}`);
         if(request.images[i].type==="url" && !getMediaUrl(request.images[i]).startsWith("https://")) throw new Error("Seedream 图片参考需要公开 HTTPS URL");
@@ -880,21 +912,23 @@ export default {
     if (!apiKey) throw new Error("请填写 API Key");
 
     if (["wan-3.0", "minimax-h3"].includes(request.model)) return generateUnifiedVideo(this, request, apiKey);
-    if (request.model !== "seedance-2.5-video") throw new Error("该安泰信模型的视频生成协议尚未适配");
+    const fast=request.model==="seedance-2.0-video-fast-enhance";
+    if (!fast && request.model !== "seedance-2.5-video") throw new Error("该安泰信模型的视频生成协议尚未适配");
     if (!request.prompt?.trim() || request.prompt.length > 15000) throw new Error("视频提示词不能为空且不能超过 15000 字符");
     const options=request.other ?? {};
     const images=request.images ?? [];
-    const videos=publicReferences(request.videos,options.referenceVideoUrls,"视频");
-    const audios=publicReferences(request.audios,options.referenceAudioUrls,"音频");
+    const videos=publicReferences(request.videos,options.referenceVideoUrls,"视频",fast);
+    const audios=publicReferences(request.audios,options.referenceAudioUrls,"音频",fast);
     const frames=Boolean(request.firstFrame || request.lastFrame);
     if(request.lastFrame && !request.firstFrame) throw new Error("尾帧必须与首帧同时提供");
     if(frames && (images.length || videos.length || audios.length)) throw new Error("首尾帧不能与多模态参考角色混用");
-    if(images.length>30 || videos.length>10 || audios.length>10) throw new Error("视频参考最多30张图片、10段视频、10段音频");
+    if(images.length>(fast?9:30) || videos.length>(fast?3:10) || audios.length>(fast?3:10)) throw new Error(fast?"视频参考最多9张图片、3段视频、3段音频":"视频参考最多30张图片、10段视频、10段音频");
     if(request.mode==="text" && (frames||images.length||request.videos?.length||request.audios?.length)) throw new Error("文生视频模式不能带参考素材，请选择参考模式");
     if(request.mode==="singleImage" && (images.length!==1 || videos.length || audios.length || frames)) throw new Error("单图模式需要且仅支持一张参考图");
     if(request.mode==="startEndRequired" && (!request.firstFrame || !request.lastFrame)) throw new Error("首尾帧模式必须同时提供首帧和尾帧");
     if(request.mode==="endFrameOptional" && !request.firstFrame) throw new Error("首帧模式必须提供首帧");
     const extend=options.video_extend===true || options.omni_reference_task_type==="extend";
+    if(fast && (extend || options.omni_reference_task_type!==undefined || options.video_extend!==undefined)) throw new Error("Seedance 2.0 Fast Enhance 未声明支持视频延长参数");
     if(options.video_extend!==undefined) booleanValue(options.video_extend,"视频延长");
     if(options.omni_reference_task_type!==undefined && !["auto","extend"].includes(String(options.omni_reference_task_type))) throw new Error("任务类型只支持 auto / extend");
     if((options.video_extend===true && options.omni_reference_task_type==="auto") || (options.video_extend===false && options.omni_reference_task_type==="extend")) throw new Error("视频延长参数冲突");
@@ -902,12 +936,12 @@ export default {
     if(options.autoDuration!==undefined) booleanValue(options.autoDuration,"自动时长");
     const duration=options.autoDuration===true ? -1 : request.duration ?? 5;
     if(duration===-1) {
-      if(extend || !videos.length) throw new Error("自动时长仅适用于带参考视频的编辑，不能用于延长");
-    } else integer(duration,4,30,"视频时长");
+      if(!fast && (extend || !videos.length)) throw new Error("自动时长仅适用于带参考视频的编辑，不能用于延长");
+    } else integer(duration,4,fast?15:30,"视频时长");
     const resolution=(request.resolution ?? "480p").toLowerCase()==="1k"?"1080p":(request.resolution ?? "480p").toLowerCase();
-    if(!["480p","720p","1080p"].includes(resolution)) throw new Error("分辨率仅支持 480p / 720p / 1080p");
-    const ratio=frames||extend ? "adaptive" : options.ratio || request.ratio || "adaptive";
-    if(!VIDEO_RATIOS.includes(ratio)) throw new Error("不支持的视频比例");
+    if(!(fast?["480p","720p"]:["480p","720p","1080p"]).includes(resolution)) throw new Error(fast?"分辨率仅支持 480p / 720p":"分辨率仅支持 480p / 720p / 1080p");
+    const ratio=!fast && (frames||extend) ? "adaptive" : options.ratio || request.ratio || "adaptive";
+    if(typeof ratio!=="string" || !VIDEO_RATIOS.includes(ratio)) throw new Error("不支持的视频比例");
     const seed=options.seed ?? -1;
     integer(seed,-1,2147483647,"随机种子");
     if(options.framespersecond!==undefined && options.framepersecond!==undefined) throw new Error("帧率字段不能同时传入");
@@ -916,34 +950,39 @@ export default {
     checkDurations(options.referenceAudioDurations,audios.length,0,"音频");
     const generateAudio=booleanValue(request.generateAudio ?? true,"生成音频");
     const watermark=booleanValue(options.watermark ?? request.watermark ?? false,"水印");
+    const returnLastFrame=fast && booleanValue(options.return_last_frame ?? false,"返回尾帧");
     const prompt=referencePrompt(request,images,videos,audios);
     if(prompt.length>15000) throw new Error("转换引用后，视频提示词不能超过15000字符");
-    const transport=options.imageTransport ?? "upload";
+    const transport=fast ? "inline" : options.imageTransport ?? "upload";
     const compress=booleanValue(options.compressReferences ?? true,"参考图压缩");
     if(!["upload","inline"].includes(String(transport))) throw new Error("未知的图片传递方式");
     const content:any[]=[{type:"text",text:prompt}];
     // Validate the whole request before any upload or generation network call.
     const allImages=[...images,...(request.firstFrame?[request.firstFrame]:[]),...(request.lastFrame?[request.lastFrame]:[])];
-    for(let i=0;i<allImages.length;i++) await checkImage(this,allImages[i],`视频图片 ${i+1}`);
-    const urlFor=async(input:MediaInput,label:string)=>input.type==="url" || transport==="inline" ? getMediaUrl(input) : uploadImage(this,input,apiKey,label,compress);
+    for(let i=0;i<allImages.length;i++) await checkImage(this,allImages[i],`视频图片 ${i+1}`,fast,!fast);
+    const urlFor=async(input:MediaInput,label:string)=>input.type==="url" || transport==="inline" ? getMediaUrl(input) : uploadImage(this,input,apiKey,label,compress,300);
     if(request.firstFrame) content.push({type:"image_url",image_url:{url:await urlFor(request.firstFrame,"首帧")},role:"first_frame"});
     if(request.lastFrame) content.push({type:"image_url",image_url:{url:await urlFor(request.lastFrame,"尾帧")},role:"last_frame"});
-    for(let i=0;i<images.length;i++) content.push({type:"image_url",image_url:{url:await urlFor(images[i],`参考图 ${i+1}`)},role:"reference_image"});
+    for(let i=0;i<images.length;i++) content.push({type:"image_url",image_url:{url:await urlFor(images[i],`参考图 ${i+1}`)},role:fast && request.mode==="singleImage"?"first_frame":"reference_image"});
     videos.forEach(input=>content.push({type:"video_url",video_url:{url:getMediaUrl(input)},role:"reference_video"}));
     audios.forEach(input=>content.push({type:"audio_url",audio_url:{url:getMediaUrl(input)},role:"reference_audio"}));
     const body:Record<string,unknown>={model:request.model,content,duration,resolution,ratio,
-      generate_audio:generateAudio,watermark,seed};
-    if(options.framespersecond!==undefined || options.framepersecond!==undefined) body.framespersecond=24;
+      generate_audio:generateAudio,watermark};
+    if(fast) body.return_last_frame=returnLastFrame;
+    else body.seed=seed;
+    if(!fast && (options.framespersecond!==undefined || options.framepersecond!==undefined)) body.framespersecond=24;
     if(options.omni_reference_task_type!==undefined || options.video_extend!==undefined) body.omni_reference_task_type=extend?"extend":"auto";
 
     const signal = AbortSignal.timeout(3600000);
     const combinedSignal = this.signal ? AbortSignal.any([signal, this.signal]) : signal;
     const payload = JSON.stringify(body);
+    if(Buffer.byteLength(payload,"utf8")>64*1048576) throw new Error("视频请求体超过64MB，请减少参考图或改用公开链接");
     const summary = videoPayloadSummary(content, payload);
+    const taskUrl=fast ? "https://www.antaixin.ai/v1/video/generations" : "https://antaixin.ai/api/v3/contents/generations/tasks";
 
     let submitResponse: Response;
     try {
-      submitResponse = await this.tool.fetch("https://antaixin.ai/api/v3/contents/generations/tasks", {
+      submitResponse = await this.tool.fetch(taskUrl, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: payload,
@@ -963,7 +1002,6 @@ export default {
     if (typeof taskId !== "string" || !taskId.trim()) {
       throw Object.assign(new Error("视频任务提交响应未返回有效任务 ID，远端任务状态未知；请先查看安泰信任务/调用记录，勿直接重复提交。"), { name: "SubmissionUnknownError" });
     }
-
     await this.tool.onTaskSubmitted?.(taskId);
 
     while (true) {
@@ -974,7 +1012,7 @@ export default {
       }
       let checkResponse: Response;
       try {
-        checkResponse = await this.tool.fetch(`https://antaixin.ai/api/v3/contents/generations/tasks/${encodeURIComponent(taskId)}`, {
+        checkResponse = await this.tool.fetch(`${taskUrl}/${encodeURIComponent(taskId)}`, {
           method: "GET", headers: { Authorization: `Bearer ${apiKey}` }, signal: combinedSignal,
         });
       } catch {
@@ -985,7 +1023,7 @@ export default {
         continue; // Only repeat GET for the same known task; never repeat POST.
       }
       if (!checkResponse.ok) {
-        if (checkResponse.status === 429 || checkResponse.status >= 500) {
+        if (checkResponse.status === 408 || checkResponse.status === 429 || checkResponse.status >= 500) {
           await checkResponse.body?.cancel().catch(() => {});
           continue;
         }

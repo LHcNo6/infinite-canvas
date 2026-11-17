@@ -9899,5 +9899,11 @@
   ],
   "生成已取消": [
     "apps/server/src/utils/media/tasks.ts"
+  ],
+  "参考图片内容为空": [
+    "apps/server/src/utils/media/provider.ts"
+  ],
+  "参考图片不能超过100MB": [
+    "apps/server/src/utils/media/provider.ts"
   ]
 }

@@ -56,7 +56,7 @@ const effectiveRatio = computed(() => {
   return props.model?.providerId === "antaixin" && ((props.model?.modelId === "wan2.7-image-pro" && override === "auto") || (props.model?.modelId === "kling-image-o1" && override === "Original")) ? override : ratio.value;
 });
 const summary = computed(() => [effectiveRatio.value, size.value, `${count.value}张`].filter(Boolean).join(" · "));
-const isSeedream = computed(() => props.model?.providerId === "antaixin" && props.model?.modelId === "seedream-5.0-pro");
+const isSeedream = computed(() => props.model?.providerId === "antaixin" && ["seedream-5.0-pro", "seedream-5.0-lite", "seedream-5-0-lite-260128"].includes(props.model?.modelId ?? ""));
 const isFlare = computed(() => props.model?.providerId === "antaixin" && ["gpt-image-2.5-flare", "gpt-image-2.5-sunburst"].includes(props.model?.modelId ?? ""));
 
 function onKeydown(event: KeyboardEvent) { if (event.key === "Escape") settingsVisible.value = false; }

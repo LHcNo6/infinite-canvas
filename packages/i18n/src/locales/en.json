@@ -3288,5 +3288,7 @@
   "没有可查询的上游任务 ID": "No upstream task ID is available to query",
   "原任务未返回可下载的成品地址": "The existing task did not return a downloadable result URL",
   "上游已完成，点击重新下载保存成品；不会重新生成。": "The provider has finished. Download the result to save it; no new generation will be submitted.",
-  "没有可恢复的成品地址": "No result URL is available for recovery"
+  "没有可恢复的成品地址": "No result URL is available for recovery",
+  "参考图片内容为空": "The reference image is empty",
+  "参考图片不能超过100MB": "Reference images cannot exceed 100 MB"
 }
