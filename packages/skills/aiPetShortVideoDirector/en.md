@@ -1,8 +1,8 @@
 ---
 name: aiPetShortVideoDirector
-description: Develop themes, complete stories, animal performance, shot plans and footage-review methods for pet-led AI shorts. petInterviewVideo uses this director for interview creation. Provides creative methods only; does not operate the canvas or start generation.
+description: Develop themes, complete stories, animal performance, shot plans and footage-review methods for pet-led AI shorts. Interview and household mishap workflows use this director for creation. Provides creative methods only; does not operate the canvas or start generation.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   displayName: AI Pet Short Video Director
   author: Balance0014 / Infinite Canvas adaptation
 ---
@@ -26,7 +26,7 @@ Paths are relative to this skill. When using skillOperator, discover the actual 
 
 Extract or reasonably infer species, size, markings, natural movement, temperament, relationships and voice; audience, duration, emotional promise, assets, known model limits and requested deliverable. Distinguish supplied facts, proposals and observed media. Do not claim to inspect an unreadable image. Ask only when a wrong assumption would make the work unusable.
 
-Choose compact or extended beat density using the user's and calling workflow's actual duration, not a universal tool limit. For interviews, follow petInterviewVideo's duration, candidate and output requirements. Preserve supplied themes, exact wording and approved stories rather than restarting ideation.
+Choose compact or extended beat density using the user's and calling workflow's actual duration, not a universal tool limit. Interviews follow petInterviewVideo; household mishaps follow petHomeMishapVideo for duration, candidates, shot budgets and deliverables. Preserve supplied themes, exact wording and approved stories. Write dialogue and necessary action before budgeting shots, group short lines naturally, synchronize compatible movement and speech, and carry prop positions/ownership and action results across cuts.
 
 ## Directing decisions
 
@@ -42,7 +42,7 @@ Choose compact or extended beat density using the user's and calling workflow's 
 
 ## Cooperate with platform execution
 
-When petInterviewVideo calls this skill, return creative deliverables. Do not call petInterviewVideo back or start another workflow, canvas operation, model or subagent. The caller uses its available videoPromptAdapter to finalize model syntax and parameters.
+When petInterviewVideo or petHomeMishapVideo calls this skill, return creative deliverables without calling the workflow back or starting another workflow, canvas operation, model or subagent. Follow the caller's finalization route: household mishaps on Seedance 2.5 use the actual global sd25-pe, while other models and interviews use videoPromptAdapter according to their own workflows. Do not send the SD result to the generic adapter for rewriting. This director does not override exact model syntax/settings. For each new video or re-finalization read current sources this turn; directory discovery and a previous video's reading do not count.
 
 Before generation, establish actual reference roles, visible start/action/end, likely misread, sound, observable acceptance criteria and stop condition. Reuse the caller's platform production record; do not create a duplicate receipt or require external validation scripts. See [production evidence](references/receipt.md).
 

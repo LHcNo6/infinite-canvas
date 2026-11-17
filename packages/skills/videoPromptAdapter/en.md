@@ -2,7 +2,7 @@
 name: videoPromptAdapter
 description: Use when an existing video plan or long-video segment plan needs prompts adapted to an exact model version and reference-input mode. Preserve plot, verbatim dialogue and asset roles; deliver a complete prompt per segment with settings separately. Does not operate the canvas or generate media. Finalizes Seedance 2.5 talking pet comedy and non-commerce interview shorts; other dedicated Seedance routes follow their workflows.
 metadata:
-  version: "1.1.7"
+  version: "1.1.9"
   displayName: Adapt Video Plans to Model Prompts
   author: Infinite Canvas
 ---
@@ -14,6 +14,8 @@ Use English for explanations and newly created text unless the user requests ano
 Accept an established creative plan, exact model/version, provider, input mode, duration, actual reference responsibilities, and sound goals. Return one complete prompt or one per segment, with settings separately. This skill handles text only: no canvas operations, generation, model substitutions, or extra authorization. Preserve approved story, exact dialogue, pet identity, product facts, sequence, and user requirements; formatting must not remove or change them.
 
 ## Model routing
+
+For petHomeMishapVideo on Seedance 2.5, the actual global sd25-pe owns dedicated finalization. Do not take over, rewrite its result or substitute a third-party guide or generic fallback for that required step. Only other models from this workflow enter the routes below, preserving the complete story, shot budgets, animal action, prop transfers and ending. If the required SD skill is unavailable, the caller preserves the director draft and pauses dependent finalization.
 
 Verify the exact version and mode, then use this skill's actual name and scope to read the corresponding reference:
 

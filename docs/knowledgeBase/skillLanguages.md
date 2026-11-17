@@ -1,5 +1,7 @@
 # Skill 名称、描述与语言选择
 
+2026-11-17：新增 `petHomeMishapVideo` 1.0.0，中英文入口使用相同技术名称；`aiPetShortVideoDirector` 平台适配版更新至 1.0.1、`videoPromptAdapter` 至 1.1.9，均同步两种入口。家庭小糗事的 Seedance 2.5 由已安装全局 `sd25-pe` 专用定稿，其原标识、版本字段及入口保持；其他模型走通用适配器。三套中文教学示例及指南不改变交付语言，不代表已经全文翻译或实际生成。详见[本次变更](changes/petHomeMishapVideo20261117.md)。
+
 2026-11-17：新增 `petInterviewVideo` 和 `aiPetShortVideoDirector` 1.0.0，中英文入口各保持同一技术名称；`videoPromptAdapter` 更新至 1.1.6，增加 Seedance 2.5 非带货采访。导演方法及采访完整示例保留各自资料语言，不代表已全文翻译；交付语言服从入口及用户要求。导演保留 Balance0014 作者署名和 MIT 许可，安装与验证见[本次变更](changes/petInterviewVideo20261117.md)。
 
 2026-11-17 `petComedyScript` 和 `petComedyVideo` 的中英文入口改为宠物拟人讲段子，保留技术标识并更新至 1.1.0；`videoPromptAdapter` 合并采访路径后更新至 1.1.7。验证与限制见[本次变更](changes/petTalkingComedy20261117.md)。
@@ -10,7 +12,7 @@
 
 ## 当前行为
 
-9 个内置 Skill 及本机已安装的 `seedance`、`sd25-pe`、`lengyi-seedance25-prompt` 均提供中文入口 `SKILL.md` 和英文入口 `en.md`，两种入口使用相同 `name`，不会成为两条重复技能。名称、描述和入口正文按每个请求的 `Accept-Language` 选择：`zh-CN`、`zh-TW` 使用简体中文版，英语及其他暂未提供 Skill 译本的语言使用英文版。没有语言头时沿用服务端既有语言回退规则。切换界面语言会重新加载打开的技能菜单和已安装插件列表。
+提供双语声明的内置 Skill 及本机已安装的 `seedance`、`sd25-pe`、`lengyi-seedance25-prompt` 均有中文入口 `SKILL.md` 和英文入口 `en.md`，两种入口使用相同 `name`，不会成为两条重复技能。名称、描述和入口正文按每个请求的 `Accept-Language` 选择：`zh-CN`、`zh-TW` 使用简体中文版，英语及其他暂未提供 Skill 译本的语言使用英文版。没有语言头时沿用服务端既有语言回退规则。切换界面语言会重新加载打开的技能菜单和已安装插件列表。
 
 中文产品文案使用“无限画布”，英文使用“Infinite Canvas”。模型名称、工具名、参数、引用句柄、现有协议及真实上游来源链接保留原标识。第三方许可证、模型专篇、示例数据，以及已有中文方法资料保留来源语言；本次双语覆盖名称、描述及入口正文，不将参考资料误称为已完成全文翻译。入口规定的交付语言优先于参考资料原始语言，用户原始对白和模型固定语法继续保留。
 
@@ -49,7 +51,8 @@ MCP 接入技能下载 `/api/mcp/skill` 也按同一请求语言提供独立的�
 | `longVideoWorkflow` | 长视频分段制作与合成 | 超过 30 秒或已有多段视频的续作、修订与合成 |
 | `petShortVideo` | 宠物带货短视频制作（30 秒内） | 实际制作单条宠物带货短片；明确选用时也支持无商品短片 |
 | `petInterviewVideo` | 宠物采访短视频制作 | 采访主题/剧本/分镜/提示词的文字交付，或 30 秒以内的采访画布制作 |
-| `aiPetShortVideoDirector` | AI 宠物短视频导演 | 宠物主题、故事、表演、分镜及素材审阅方法；采访流程的创作依赖，不自行生成媒体 |
+| `petHomeMishapVideo` | 宠物家庭小糗事短视频制作 | 家庭小事件的主题/剧情/分镜/提示词，或 30 秒以内的画布制作；SD 2.5 由 sd25-pe 专用定稿 |
+| `aiPetShortVideoDirector` | AI 宠物短视频导演 | 宠物主题、故事、表演、分镜及素材审阅方法；采访和家庭小糗事的创作依赖，不自行生成媒体 |
 | `petCommercePrompt` | 宠物带货脚本与提示词 | 宠物带货创作，只交付文字 |
 | `petCommercePromptSd25` | 宠物带货脚本与提示词（Seedance 2.5） | Seedance 2.5 宠物带货创作及长视频单段定稿，只交付文字 |
 | `v118workflow` | 小说改编与分集视频制作 | 按集改编、逐阶段确认与分集画布归档 |
