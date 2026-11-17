@@ -1,5 +1,7 @@
 # Skill 名称、描述与语言选择
 
+2026-11-16：`canvas`、`workflow`、`longVideoWorkflow`、`petShortVideo` 中英文入口同步增加[预检、制作清单和关键版本](productionSafety.md)约定；有结构化工具时，新任务不另建重复 Markdown 台账。参考资料仍按原语言维护。
+
 [返回知识库](readme.md)
 
 ## 当前行为

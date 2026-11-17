@@ -133,7 +133,8 @@
     "apps/web/src/pages/workspace/panels/canvas/components/canvasMenu.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/assetLibrary.vue",
     "apps/web/src/pages/workspace/components/workspaceMenu.vue",
-    "apps/desktop/src/index.ts"
+    "apps/desktop/src/index.ts",
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
   ],
   "调整输入框高度": [
     "apps/web/src/components/agent/conversation/messageInput.vue"
@@ -1844,7 +1845,8 @@
   ],
   "刷新": [
     "apps/web/src/components/settings/panels/deviceLink.vue",
-    "apps/web/src/components/settings/panels/mcp/index.vue"
+    "apps/web/src/components/settings/panels/mcp/index.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
   ],
   "已连接": [
     "apps/web/src/components/settings/panels/deviceLink.vue"
@@ -3068,7 +3070,8 @@
   "继续编辑": [
     "apps/web/src/components/settings/panels/pluginMarket/agentEditorDialog.vue",
     "apps/web/src/components/settings/panels/pluginMarket/skillEditorDialog.vue",
-    "apps/web/src/components/settings/panels/personalization.vue"
+    "apps/web/src/components/settings/panels/personalization.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
   ],
   "内容不能超过 {0} 个字符": [
     "apps/web/src/components/settings/panels/personalization.vue"
@@ -3175,7 +3178,8 @@
   ],
   "放弃修改": [
     "apps/web/src/components/settings/panels/pluginMarket/agentEditorDialog.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/skillEditorDialog.vue"
+    "apps/web/src/components/settings/panels/pluginMarket/skillEditorDialog.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
   ],
   "保存失败": [
     "apps/web/src/components/settings/panels/pluginMarket/agentEditorDialog.vue"
@@ -5195,7 +5199,8 @@
   ],
   "请输入名称": [
     "apps/web/src/pages/home/workspacePicker.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/assetMenu.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/assetMenu.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
   ],
   "请输入有效的单个文件或文件夹名称": [
     "apps/web/src/pages/home/workspacePicker.vue"
@@ -6085,7 +6090,8 @@
     "apps/web/src/pages/workspace/panels/canvas/useCanvasTools.ts"
   ],
   "请先选择画布": [
-    "apps/web/src/pages/workspace/panels/canvas/useCanvasTools.ts"
+    "apps/web/src/pages/workspace/panels/canvas/useCanvasTools.ts",
+    "apps/web/src/pages/workspace/panels/canvas/useCanvasProduction.ts"
   ],
   "当前浏览器或 WebView 不支持音频文件语音识别": [
     "apps/web/src/pages/workspace/panels/canvas/useCanvasTools.ts"
@@ -9905,5 +9911,237 @@
   ],
   "参考图片不能超过100MB": [
     "apps/server/src/utils/media/provider.ts"
+  ],
+  "画布或工作区已变化，请重新操作": [
+    "apps/web/src/pages/workspace/panels/canvas/useCanvasProduction.ts"
+  ],
+  "指定节点不存在，请重新选择": [
+    "apps/web/src/pages/workspace/panels/canvas/useCanvasProduction.ts"
+  ],
+  "制作清单不属于当前画布": [
+    "apps/web/src/pages/workspace/panels/canvas/useCanvasProduction.ts"
+  ],
+  "调用记录不可读取": [
+    "apps/web/src/pages/workspace/panels/canvas/useCanvasProduction.ts"
+  ],
+  "清单在核验期间发生变化，请重新读取并核验": [
+    "apps/web/src/pages/workspace/panels/canvas/useCanvasProduction.ts",
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "不支持的制作操作": [
+    "apps/web/src/pages/workspace/panels/canvas/useCanvasProduction.ts"
+  ],
+  "当前环境无法核对版本文件完整性": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "画布格式无效": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "节点标识无效": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "素材在复制期间发生变化：{0}": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "素材在保存期间发生变化：{0}": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "画布在保存版本期间发生变化，请重新保存版本": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "画布名称无效": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "版本素材索引无效": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "缺少节点插件，未恢复：{0}": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "版本节点或连线无效": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "版本素材已损坏：{0}": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "恢复失败，部分新素材未能清理：{0}": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "制作清单已变化或不属于当前画布，请重新读取；当前修改未写入": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "成果路径必须位于工作区内": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "制作清单关联更新失败且部分回退冲突，请检查清单中的画布路径；未覆盖冲突内容": [
+    "apps/web/src/pages/workspace/panels/canvas/canvasProduction.ts"
+  ],
+  "制作与版本": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "生成前检查": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "检查选中节点 / 全部生成节点": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "检查不提交生成。结果只对应检查时的配置，实际提交仍会重新检查。": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "检查期间画布已变化，请重新检查": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "未发现阻塞项": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "存在阻塞或未完成检查": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "当前范围没有可检查的生成节点。": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "通过": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "制作清单": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "选择制作清单": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "新建清单": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "重新读取": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "制作目标": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "计划状态、生成核验、用于下游和人工审阅分别记录。继续制作前先保存并核验；刷新后需重新核验。": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "步骤 {0}": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "移除": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "计划状态": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "关联节点": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "生成尝试编号": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "实际结果路径": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "阻碍与下一步": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "已用于下游": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "已采用": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "未采用": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "未审阅": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "人工审阅：{0}": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "确认采用": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "待核验；计划完成不等于生成成功": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "添加步骤": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "保存清单": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "核验实际状态": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "本次核验：{0}。不会自动续跑或重发生成。": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "关键版本": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "版本名称": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "保存当前版本": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "保存正文、配置和本地素材。恢复会创建新画布，不覆盖当前画布、不重新生成。外部网址和插件私有状态需自行核对。": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "恢复为新画布": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "计划待办": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "计划进行中": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "计划完成": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "计划阻塞": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "阻塞": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "等待依赖": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "提醒": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "未完成检查": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "画布或工作区已变化": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "清单有未保存修改，是否放弃？": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "保留修改": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "确认你已预览此步骤的实际结果，并决定采用？": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "人工审阅": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "关键版本已保存": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "为恢复的新画布命名。当前画布保留。": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "恢复关键版本": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "，衔接参考需重新绑定": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
+  ],
+  "已创建 {0}{1}": [
+    "apps/web/src/pages/workspace/panels/canvas/components/productionPanel.vue"
   ]
 }

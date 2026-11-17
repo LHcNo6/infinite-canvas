@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./useGenerationPreflight": "./src/useGenerationPreflight.ts",
     "./promptInput": "./src/components/promptInput.vue",
     "./promptText": "./src/promptText.ts",
     "./referenceItem": "./src/components/referenceItem.vue",

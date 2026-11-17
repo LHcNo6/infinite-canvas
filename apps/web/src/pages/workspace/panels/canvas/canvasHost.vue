@@ -29,6 +29,7 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { createCanvasMention, mentionNodeOutputs, queryMentionNodes, type MentionCanvasSource } from "@toonflow/server/agent/mentionSources";
 import type { NodeDocumentState } from "@toonflow/nodes-scaffold/nodeDocument";
 import { copyCanvasFiles, findRemainingCanvas, readCanvasFiles, type DocumentNode, type DocumentNodeOptions } from "./canvasFiles";
+import { moveProductionLinks } from "./canvasProduction";
 
 const props = withDefaults(defineProps<{ active?: boolean; settingsVisible?: boolean }>(), { active: true, settingsVisible: false });
 const selectedTool = defineModel<"move" | "hand">("selectedTool", { default: "move" });
@@ -310,6 +311,11 @@ async function performFileAction(directory: string, action: "copy" | "rename" | 
         if (copies.length) canvases.value = [...canvases.value, ...copies];
       } else if (action === "rename" || action === "move") {
         await files.rename(path, target!);
+        try { await moveProductionLinks(files, path, target!); }
+        catch (error) {
+          await files.rename(target!, path);
+          throw error;
+        }
         checkDirectory(directory);
         for (const canvas of affected) {
           const previous = canvas.id;

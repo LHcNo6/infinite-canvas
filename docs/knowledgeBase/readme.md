@@ -10,6 +10,7 @@
 | --- | --- |
 | 界面与品牌 | [外观与品牌](appearanceAndBrand.md) |
 | 工作区 | [工作区切换](workspaceSwitch.md) |
+| 制作管理 | [生成前检查、制作清单与关键版本](productionSafety.md) |
 | 媒体模型 | [安泰信媒体模型（Seedance / Seedream）](antaixinModels.md) |
 | 成品恢复 | [Agent 调用记录与重试下载、原任务手动查询及成品链接补充](nodeModelCalls.md) |
 | 生成节点 | [配置回执](compactNodeConfig.md)、[上传素材](generationNodeUpload.md)、[生成等待](generationWaiting.md)、[模型调用记录](nodeModelCalls.md) |

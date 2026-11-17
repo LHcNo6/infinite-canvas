@@ -8,6 +8,7 @@ await createToolConfig({
   github: "https://github.com/HBAI-Ltd/Toonflow-app",
   prompt: `getCanvas 默认只读画布概览，按需用 include 查询画布列表或可用节点类型。findCanvasNodes 按名称、ID、类型或选择状态定位节点；已知 ID 时直接用 getCanvasNodes 读取必要字段，用 getCanvasEdges 查询局部连线，用 getNodeTools 查询目标节点函数。用户可能同时编辑画布，状态变化后重新查询，不把旧快照当作当前状态。
 所有读取都有条数和体积上限，检查 hasMore/nextCursor 与截断信息；空列表但 hasMore 为 true 仍需继续扫描。继续分页时保留原查询参数，只替换 cursor，游标失效时重新查询。全图任务逐批完成，只保留进度摘要和游标，不将全部节点详情累积到上下文。
+批量改写已有内容前先 createCanvasSnapshot 保存关键版本；失败时停止覆盖。图片/视频提交前用 preflightCanvas 检查目标节点，检查不生成、不代替算力授权。多步骤制作使用 getProduction/updateProduction 保存稳定步骤、nodeId、attemptId 与实际结果路径，更新携带 revision；继续前 verifyProduction，状态未知不自动重发。计划完成、调用成功、用于下游和人工采用分别记录。恢复版本只创建新画布，不代表生成恢复。
 使用实际提供的画布操作工具修改画布，不直接写入画布 JSON 代替界面操作。新建或切换画布后，后续操作针对返回的新画布。
 节点业务参数和执行行为通过已注册的 nodeTools 操作；nodeId、node:functionName 和参数结构以 getNodeTools 返回值为准，args 根据用户任务填写，不能猜测未注册的函数或字段。
 图片和视频的 node:waitGeneration 会在工具内部合并连续等待；记录启动回执并传 attemptId。图片5分钟、视频10分钟检查本次调用记录一次，再分别等2.5分钟、5分钟。返回 waitBudgetExceeded 时报告仍在运行、等待已达上限并保留任务，不自动重复等待或重新生成；稍后继续先读取原任务状态。

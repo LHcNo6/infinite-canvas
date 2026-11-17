@@ -124,6 +124,7 @@ import { groupNodeModels } from "@toonflow/node-shared/groupNodeModels";
 import { showNodeError } from "@toonflow/node-shared/showNodeError";
 import { useNodeGeneration } from "@toonflow/node-shared/useNodeGeneration";
 import { useNodeReferences } from "@toonflow/node-shared/useNodeReferences";
+import { useGenerationPreflight, inspectReferenceFiles, type GenerationIssue } from "@toonflow/node-shared/useGenerationPreflight";
 import { useModelForm } from "@toonflow/node-shared/useModelForm";
 import promptInput from "@toonflow/node-shared/promptInput";
 import referenceItem from "@toonflow/node-shared/referenceItem";
@@ -340,19 +341,42 @@ async function confirmInpaint() {
   await inpaintEditor.createInpaint({ prompt, images }, new AbortController().signal);
 }
 
-async function startGeneration() {
+const preflight = useGenerationPreflight(async signal => {
+  const issues: GenerationIssue[] = [];
   const input = generationInput.value;
-  if (generating.value) throw new Error("图片正在生成，请等待完成");
-  if (panorama.value?.visible) throw new Error("请先关闭全景图，再启动图片生成");
-  if (uploading.value) throw new Error("图片正在替换，请等待完成");
-  if (deleting.value) throw new Error("节点正在删除");
-  if (lightingVisible.value) throw new Error("请先退出打光，再启动图片生成");
-  if (multiAngleVisible.value) throw new Error("请先退出多角度，再启动图片生成");
-  if (editor.value?.busy || editor.value?.mode === "mark") throw new Error("请先完成图片标记");
-  if (editor.value?.mode === "inpaint") throw new Error("请先确认局部重绘，再到子节点生成");
-  if (!generationPrompt.value) throw new Error("请输入生成提示词");
+  if (generating.value) issues.push({ level: "error", message: "图片正在生成，请等待完成" });
+  if (panorama.value?.visible) issues.push({ level: "error", message: "请先关闭全景图，再启动图片生成" });
+  if (uploading.value) issues.push({ level: "error", message: "图片正在替换，请等待完成" });
+  if (deleting.value) issues.push({ level: "error", message: "节点正在删除" });
+  if (lightingVisible.value) issues.push({ level: "error", message: "请先退出打光，再启动图片生成" });
+  if (multiAngleVisible.value) issues.push({ level: "error", message: "请先退出多角度，再启动图片生成" });
+  if (editor.value?.busy || editor.value?.mode === "mark") issues.push({ level: "error", message: "请先完成图片标记" });
+  if (editor.value?.mode === "inpaint") issues.push({ level: "error", message: "请先确认局部重绘，再到子节点生成" });
+  if (!generationPrompt.value) issues.push({ level: "error", message: "请输入生成提示词" });
   const references = refList.value.filter(item => !data.value.inpaint || item.dataType !== "IMAGE" || item.value?.url !== data.value.inpaint.source);
-  if (references.some(item => item.value === undefined)) throw new Error("引用节点暂无内容，请先补充引用内容");
+  if (references.some(item => item.value === undefined)) issues.push({ level: "error", message: "引用节点暂无内容，请先补充引用内容" });
+  if (!input) issues.push({ level: "error", message: "请先选择图片模型" });
+  if (modelsLoading.value) issues.push({ level: "unknown", message: "模型目录正在读取，请稍后重新检查" });
+  if (references.some(item => item.value === undefined)) {
+    const issue = issues.find(item => item.message === "引用节点暂无内容，请先补充引用内容");
+    if (issue) issue.level = "waiting";
+  }
+  for (const match of generationPrompt.value.matchAll(/\{\{ref (\d+)\}\}/g)) {
+    if (!refList.value[Number(match[1]) - 1]) issues.push({ level: "error", message: `参考 ${match[1]} 不存在` });
+  }
+  if (selectedModel.value && !sizeOptions.value.includes(data.value.size)) issues.push({ level: "error", message: "当前模型不支持所选分辨率" });
+  if (selectedModel.value && !ratioOptions.value.includes(data.value.ratio)) issues.push({ level: "error", message: "当前模型不支持所选比例" });
+  if (!references.some(item => item.dataType === "IMAGE")) issues.push({ level: "warning", message: "没有参考图片，跨镜头一致性需自行检查" });
+  issues.push(...await inspectReferenceFiles(files.getWorkspaceFiles(), [...references.flatMap(item => typeof item.value === "object" && item.value && "url" in item.value ? [item.value.url] : []), ...(data.value.inpaint ? [data.value.inpaint.source, data.value.inpaint.guide] : [])], signal));
+  return issues;
+});
+
+async function startGeneration() {
+  const before = JSON.stringify(generationInput.value);
+  await preflight.assertReady();
+  if (disposed || before !== JSON.stringify(generationInput.value)) throw new Error("生成配置已变化，请重新检查");
+  if (generating.value) throw new Error("图片正在生成，请等待完成");
+  const input = generationInput.value;
   if (!input) throw new Error("请先选择图片模型");
   const workspace = files.getWorkspaceFiles();
   const controller = new AbortController();

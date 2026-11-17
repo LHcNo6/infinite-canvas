@@ -11,6 +11,7 @@ import { canvasEdgeSummary, canvasNodeSummary, createCanvasQueries, isCanvasRead
 
 export function useCanvasTools(options: {
   availableNodes: Ref<{ type: string; label: string }[]>;
+  executeProduction(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>;
   flushSave(): Promise<void>;
   menu(): {
     getCanvases(signal?: AbortSignal): Promise<{ id: string; name: string }[]>;
@@ -100,7 +101,7 @@ export function useCanvasTools(options: {
                 canvasSignal.throwIfAborted();
                 result = await execute({ name: "getCanvas", args: {} }, callSignal, id);
               }
-              if (!isCanvasRead(request.name) && request.name !== "selectNodes" && request.name !== "transcribeAudio") await options.flushSave();
+              if (!(request.name === "nodeTools" && request.args.name === "node:preflightGeneration") && !isCanvasRead(request.name) && !["selectNodes", "transcribeAudio", "preflightCanvas", "getProduction", "listCanvasSnapshots", "verifyProduction"].includes(request.name)) await options.flushSave();
               callSignal.throwIfAborted();
               canvasSignal.throwIfAborted();
               return result;
@@ -126,6 +127,7 @@ export function useCanvasTools(options: {
   async function execute(request: CanvasToolCall, signal: AbortSignal, canvasId: string): Promise<unknown> {
     signal.throwIfAborted();
     if (!canvasId && !["getCanvas", "addCanvas", "switchCanvas"].includes(request.name)) throw new Error("请先选择画布");
+    if (["preflightCanvas", "createCanvasSnapshot", "listCanvasSnapshots", "restoreCanvasSnapshot", "getProduction", "updateProduction", "verifyProduction"].includes(request.name)) return options.executeProduction(request.name, request.args, signal);
     if (isCanvasRead(request.name)) {
       await nextTick();
       signal.throwIfAborted();

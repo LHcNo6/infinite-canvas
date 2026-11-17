@@ -73,6 +73,7 @@
       <canvasMenu ref="canvasMenuRef" v-model:canvasId="canvasId" :directory="project?.directory" :initialCanvasId="initialCanvasId" :activateCanvas="activateCanvas" :flushSave="flushCanvases ?? flushCanvasSave">
         <assetLibrary ref="assetLibraryRef" v-model="assetsVisible" :directory="project?.directory" />
       </canvasMenu>
+      <productionPanel :canvasId="canvasId" :directory="project?.directory" :changed="production.changed.value" :execute="production.execute" />
       <canvasControls
         v-if="canvasId"
         ref="canvasControlsRef"
@@ -131,7 +132,7 @@
 
 <script setup lang="ts">
 import { t, translate } from "@toonflow/i18n/vue";
-import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, onScopeDispose, provide, ref, shallowReactive, shallowRef, watch } from "vue";
+import { computed, inject, markRaw, nextTick, onBeforeUnmount, onMounted, onScopeDispose, provide, ref, shallowReactive, shallowRef, watch } from "vue";
 import axios from "axios";
 import { debounce } from "lodash-es";
 import { ElMessage } from "element-plus";
@@ -171,6 +172,8 @@ import { readClipboardFiles, readClipboardText, writeClipboardImage } from "@/li
 import nodeMenu from "./components/nodeMenu.vue";
 import remoteNode from "./components/remoteNode.vue";
 import canvasMenu from "./components/canvasMenu.vue";
+import productionPanel from "./components/productionPanel.vue";
+import { useCanvasProduction } from "./useCanvasProduction";
 import canvasControls from "./components/canvasControls.vue";
 import canvasEmpty from "./components/canvasEmpty.vue";
 import assetLibrary from "./components/assetLibrary.vue";
@@ -377,7 +380,15 @@ async function selectAsset(entry: { name: string; path: string; type: string }) 
     if (assetSelection.value === selection) assetSelecting.value = false;
   }
 }
+const productionCanvases = inject<import("vue").ShallowRef<{ id: string; name: string }[]>>("canvasList", shallowRef([]));
+const production = useCanvasProduction({
+  binding: () => ({ directory: project.value?.directory ?? "", canvasId: canvasId.value }),
+  flushSave: flushCanvasSave,
+  availableTypes: () => availableNodes.value.map(node => node.type),
+  registerCanvas: canvas => { productionCanvases.value = [...productionCanvases.value, canvas]; },
+});
 const createCanvasContext = useCanvasTools({
+  executeProduction: production.execute,
   availableNodes,
   flushSave: flushCanvasSave,
   menu() {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+export { z };
 export type { CanvasToolCall, CanvasInfo, CanvasContext } from "@toonflow/tools-scaffold/runtime";
 
 const nodeId = z.string().min(1).max(256);
@@ -7,7 +8,26 @@ const canvasId = nodeId.optional();
 const cursor = z.string().min(1).max(4096).optional();
 const nodeIds = z.array(nodeId).min(1).max(20);
 
+export const productionStepSchema = z.strictObject({
+  id: z.string().min(1).max(120),
+  title: z.string().trim().min(1).max(300),
+  status: z.enum(["pending", "doing", "done", "blocked"]),
+  nodeId: nodeId.optional(),
+  attemptId: z.uuid().optional(),
+  resultPath: z.string().min(1).max(4096).optional(),
+  note: z.string().max(2000).optional(),
+  usedDownstream: z.boolean().optional(),
+});
+export type ProductionStep = z.output<typeof productionStepSchema>;
+
 export const canvasSchemas = {
+  preflightCanvas: z.strictObject({ nodeIds: nodeIds.optional() }),
+  createCanvasSnapshot: z.strictObject({ name: z.string().trim().min(1).max(120) }),
+  listCanvasSnapshots: z.strictObject({}),
+  restoreCanvasSnapshot: z.strictObject({ snapshotId: z.uuid(), name: z.string().trim().min(1).max(120) }),
+  getProduction: z.strictObject({ productionId: z.uuid().optional() }),
+  updateProduction: z.strictObject({ productionId: z.uuid().optional(), revision: z.string().regex(/^[a-f0-9]{64}$/).optional(), title: z.string().trim().min(1).max(200), steps: z.array(productionStepSchema).max(100).refine(items => new Set(items.map(item => item.id)).size === items.length, "步骤 ID 不能重复") }),
+  verifyProduction: z.strictObject({ productionId: z.uuid() }),
   getCanvas: z.strictObject({
     canvasId,
     include: z.array(z.enum(["canvases", "nodeTypes"])).max(2).optional(),
@@ -73,6 +93,13 @@ export type CanvasRequest = {
 }[CanvasOperationName];
 
 export const canvasOperations = [
+  { name: "preflightCanvas", label: "生成前检查", description: "只读检查图片与视频生成节点，不提交生成、不报价。nodeIds 省略时检查当前选中节点；未选择时检查全图生成节点。返回逐节点错误、等待、提醒和未完成检查；ready 不代表未来提交或画质保证。", parameters: canvasSchemas.preflightCanvas },
+  { name: "createCanvasSnapshot", label: "保存关键版本", description: "保存当前画布的命名版本，包括正文与引用的本地素材。批量修改已有内容前先保存版本；版本创建失败时停止覆盖操作。不会生成或覆盖其他画布。", parameters: canvasSchemas.createCanvasSnapshot },
+  { name: "listCanvasSnapshots", label: "查看关键版本", description: "列出工作区保存的关键版本及来源画布，不返回全部节点和文件内容。", parameters: canvasSchemas.listCanvasSnapshots },
+  { name: "restoreCanvasSnapshot", label: "恢复关键版本", description: "将版本恢复为指定名称的新画布和独立素材，返回 canvasId；不切换或覆盖当前画布，不启动生成。连续性绑定需要重新核对；使用 switchCanvas 查看。", parameters: canvasSchemas.restoreCanvasSnapshot },
+  { name: "getProduction", label: "读取制作清单", description: "省略 productionId 列出当前画布的制作清单；指定 ID 读取步骤和人工审阅。历史运行状态不是当前任务证据，继续前调用 verifyProduction。", parameters: canvasSchemas.getProduction },
+  { name: "updateProduction", label: "更新制作清单", description: "新建或完整更新制作清单。更新必须携带 getProduction 返回的 revision，冲突时重新读取并保留修改。步骤有稳定 id，可关联 nodeId、attemptId、resultPath；status 是计划状态，不代表媒体成功或用户采用。", parameters: canvasSchemas.updateProduction },
+  { name: "verifyProduction", label: "核验制作清单", description: "重新读取节点、实际模型调用记录与结果文件，为清单返回本次核验结果。不会重试或提交生成；未知状态须停下核实，成功不代表用户已审阅采用。", parameters: canvasSchemas.verifyProduction },
   { name: "getCanvas", label: "画布概览", description: "读取激活画布的 ID、节点数、连线数、选中数量和视口，不返回全部节点、连线或函数。include 按需选择 canvases（画布列表）或 nodeTypes（availableNodeTypes），二者共用 cursor/limit 分页。已知节点 ID 时可直接读取节点。所有读取工具每次最多 64 KiB，返回 hasMore/nextCursor；继续分页须保留原参数，仅替换 cursor。cursor 失效时重新查询。canvasId 可选，用于校验目标仍是当前激活画布。不要直接修改画布 JSON。", parameters: canvasSchemas.getCanvas },
   { name: "findCanvasNodes", label: "查找画布节点", description: "按 query（节点 ID 或完整名称）、types 和 selectedOnly 筛选节点，省略筛选时分页列举；返回 nodes 简要信息，其中名称预览最多 512 字符，不返回正文和函数定义。limit 默认 30、最多 100，每次最多扫描 2000 个节点。totalNodes 是画布节点总数而非命中数；selectedOnly 按各页读取时的选择状态筛选，并非冻结快照。即使 nodes 为空，hasMore 为 true 仍须使用 nextCursor 继续扫描。处理全部节点时逐批完成并保留摘要和游标，避免将各页详情不断堆进上下文。", parameters: canvasSchemas.findCanvasNodes },
   { name: "getCanvasNodes", label: "读取节点详情", description: "按已知且不重复的 nodeIds 读取最多 20 个节点，fields 默认 label/type/position；按需指定 ports、data、outputs。dataKeys 仅选择 data 的自身属性。path 可读取投影字段下的嵌套值，如 ['data','promptModel']，仅访问自身属性，ports 对应 data.handles。path 返回 value，数组/对象按 valueOffset/valueLimit 分页（默认 30、最多 100），字符串按 textOffset/textLimit 分段（默认 1000、最多 4000 字符）。textOffset 或 valueOffset 大于 0 时必须提供 path。检查每节点 truncated 的路径、total、nextOffset，沿该路径继续读取，不能把截断当完整。已有文本文件路径应交给文件读取工具。响应受 64 KiB 限制，hasMore 时保留参数用 nextCursor 继续。", parameters: canvasSchemas.getCanvasNodes },

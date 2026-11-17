@@ -37,7 +37,7 @@ export async function findRemainingCanvas(files: Files, excludedPath: string, si
       signal?.throwIfAborted();
       if (entry.path === excludedPath || entry.path.startsWith(`${excludedPath}/`)) continue;
       if (entry.type === "directory") {
-        if (!["assets", ".agent"].includes(entry.name.toLowerCase())) folders.push(entry.path);
+        if (!["assets", ".agent", ".toonflow"].includes(entry.name.toLowerCase())) folders.push(entry.path);
       } else if (/\.json$/i.test(entry.name) && await isCanvasFile(files, entry.path, signal)) {
         return { id: entry.path, name: entry.name.slice(0, -5) };
       }
@@ -57,7 +57,7 @@ export async function readCanvasFiles(files: Files, path = "", options: Omit<Doc
     const entry = entries[index]!;
     try {
       if (entry.type === "directory") {
-        if (entry.name.toLowerCase() !== "assets") entries.push(...(await files.list(entry.path, signal)).entries);
+        if (!["assets", ".agent", ".toonflow"].includes(entry.name.toLowerCase())) entries.push(...(await files.list(entry.path, signal)).entries);
         continue;
       }
       if (!/\.json$/i.test(entry.name) || !await isCanvasFile(files, entry.path, signal)) continue;

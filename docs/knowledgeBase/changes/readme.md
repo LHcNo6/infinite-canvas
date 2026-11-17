@@ -11,6 +11,7 @@
 - 2026-11-16：[安泰信 Seedance Fast 与 Seedream Lite 接入](antaixinByteplusModels20261116.md)
 - 2026-11-16：[安泰信成品下载恢复与视频提交保护](antaixinResultRecovery20261116.md)
 - 2026-11-16：[恢复入口可见性与视频原任务手动查询](antaixinManualQuery20261116.md)
+- 2026-11-16：[制作检查、清单与关键版本](productionSafety20261116.md)
 - 2026-11-15：[无图图片指令卡片收紧](imageCommandTextCards20261115.md)
 - 2026-11-14：[剩余通用方向完整转为宠物领域](imageCommandsPetCoverage20261114.md)
 - 2026-11-14：[完整通用图片指令迁入](imageCommandsGeneralImport20261114.md)

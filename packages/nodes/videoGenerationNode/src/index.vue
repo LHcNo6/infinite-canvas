@@ -56,6 +56,7 @@
         <div v-if="frameMode" class="referenceHint">
           {{ data.firstFrameBinding ? "已显式绑定首帧" : selectedMode === "startFrameOptional" ? "仅一张图片时作为尾帧；两张图片按顺序作为首帧、尾帧" : "图片引用按顺序作为首帧、尾帧" }}
         </div>
+        <div v-if="data.continuityNeedsReview" class="referenceHint">此节点来自关键版本，请重新核对并绑定首帧或衔接参考。</div>
         <div v-if="data.continuityReferenceBinding" class="referenceHint">
           已绑定上一段尾帧作为衔接参考；参考式衔接不能保证首帧完全一致。
         </div>
@@ -117,6 +118,7 @@ import { nodeSkeleton, nodeTools, useNode, z, type NodeMediaModel, type NodeVide
 import { groupNodeModels } from "@toonflow/node-shared/groupNodeModels";
 import { showNodeError } from "@toonflow/node-shared/showNodeError";
 import { useNodeGeneration } from "@toonflow/node-shared/useNodeGeneration";
+import { useGenerationPreflight, inspectReferenceFiles, type GenerationIssue } from "@toonflow/node-shared/useGenerationPreflight";
 import { useModelForm } from "@toonflow/node-shared/useModelForm";
 import { useNodeReferences } from "@toonflow/node-shared/useNodeReferences";
 import { getPromptText } from "@toonflow/node-shared/promptText";
@@ -147,7 +149,7 @@ type FrameBinding = { source: string; sourceHandle: string; path: string };
 type ContinuityReferenceBinding = FrameBinding & { videoNodeId: string; videoUrl: string; attemptId: string; sha256: string };
 type GenerationRecord = { attemptId: string; videoUrl: string; videoMimeType: string };
 type FrameRecord = { nodeId: string; videoUrl: string; videoMimeType: string; imageUrl: string; attemptId?: string; sha256?: string };
-const data = computed(() => node.data as { prompt: string; promptModel: PromptModel; model: string; duration?: number; resolution: string; ratio: string; mode: string; generateAudio: boolean; other: Record<string, unknown>; lastFrameNodeId?: string; lastFrameRecord?: FrameRecord; lastGenerationRecord?: GenerationRecord; firstFrameBinding?: FrameBinding; continuityReferenceBinding?: ContinuityReferenceBinding });
+const data = computed(() => node.data as { prompt: string; promptModel: PromptModel; model: string; duration?: number; resolution: string; ratio: string; mode: string; generateAudio: boolean; other: Record<string, unknown>; lastFrameNodeId?: string; lastFrameRecord?: FrameRecord; lastGenerationRecord?: GenerationRecord; firstFrameBinding?: FrameBinding; continuityNeedsReview?: boolean; continuityReferenceBinding?: ContinuityReferenceBinding });
 data.value.prompt ??= "";
 data.value.promptModel ??= [];
 data.value.model ??= "";
@@ -442,46 +444,68 @@ function loadModels() {
   return modelsRequest;
 }
 
-async function startGeneration() {
-  if (generating.value) throw new Error("视频正在生成，请等待完成");
-  if (checkingContinuity.value) throw new Error("正在核对衔接参考，请稍候");
-  if (uploading.value) throw new Error("视频正在替换，请等待完成");
-  if (extractingFrame.value) throw new Error("正在提取尾帧，请等待完成");
-  if (deleting.value) throw new Error("节点正在删除");
-  if (data.value.continuityReferenceBinding) {
-    const binding = { ...data.value.continuityReferenceBinding };
-    const canvasId = getCanvas?.()?.id;
-    const directory = getWorkspaceDirectory?.();
-    checkingContinuity.value = true;
-    try {
-      validateContinuityReference(binding);
-      if (await continuityFileHash(binding.path) !== binding.sha256) throw new Error("衔接参考文件已变化，请重新绑定");
-      if (disposed || deleting.value || flow.findNode(id) !== node || getCanvas?.()?.id !== canvasId || getWorkspaceDirectory?.() !== directory || JSON.stringify(data.value.continuityReferenceBinding) !== JSON.stringify(binding)) throw new Error("衔接参考或画布已变化，请重新检查");
-      validateContinuityReference(binding);
-    } finally { checkingContinuity.value = false; }
-  }
-  const choice = selectedModel.value;
-  // ACT: 提交时按稳定 ID 解析，避免依赖编辑器挂载及异步重排同步。
+function currentGenerationInput() {
   const references = referenceMentions.value;
   const prompt = data.value.promptModel.length ? getPromptText(data.value.promptModel, referenceId => {
     const value = references.find(reference => reference.id === referenceId)?.value;
     if (value === undefined) throw new Error("提示词引用的素材已失效，请重新选择引用");
     return value;
   }) : data.value.prompt;
-  const input = getGenerationInput(prompt);
-  if (!choice || !input) throw new Error("请先选择视频模型");
-  if (!input.prompt) throw new Error("请输入生成提示词");
-  if (data.value.firstFrameBinding) validateFirstFrame(data.value.firstFrameBinding);
-  if (data.value.continuityReferenceBinding) {
-    const index = validateContinuityReference(data.value.continuityReferenceBinding);
-    if (!input.prompt.includes(`{{ref ${index}}}`)) throw new Error("提示词未引用衔接参考，请明确标注上一段尾帧");
-  }
-  if (refList.value.some(item => item.value === undefined)) throw new Error("引用节点暂无内容，请先补充引用内容");
-  for (const match of input.prompt.matchAll(/\{\{ref (\d+)\}\}/g)) {
+  return getGenerationInput(prompt);
+}
+
+const preflight = useGenerationPreflight(async signal => {
+  const issues: GenerationIssue[] = [];
+  const check = (action: () => void) => {
+    try { action(); } catch (error) { issues.push({ level: "error", message: error instanceof Error ? error.message : String(error) }); }
+  };
+  if (generating.value || uploading.value || extractingFrame.value || deleting.value || checkingContinuity.value) issues.push({ level: "waiting", message: "视频节点正在处理，请完成后再生成" });
+  if (modelsLoading.value) issues.push({ level: "unknown", message: "模型目录正在读取，请稍后重新检查" });
+  const getInput = () => { try { return currentGenerationInput(); } catch (error) { issues.push({ level: "error", message: error instanceof Error ? error.message : String(error) }); return undefined; } };
+  const input = getInput();
+  if (!selectedModel.value || !input) issues.push({ level: "error", message: "请先选择有效的视频模型" });
+  if (!input?.prompt.trim()) issues.push({ level: "error", message: "请输入生成提示词" });
+  if (refList.value.some(item => item.value === undefined)) issues.push({ level: "waiting", message: "引用节点暂无内容，请等待上游完成或补充引用" });
+  for (const match of (input?.prompt ?? "").matchAll(/\{\{ref (\d+)\}\}/g)) {
     const reference = refList.value[Number(match[1]) - 1];
-    if (reference?.dataType === "STRING" && !reference.value?.trim()) throw new Error(`参考 ${match[1]} 的文本为空，请补充内容或移除提示词中的引用`);
+    if (!reference) issues.push({ level: "error", message: `参考 ${match[1]} 不存在` });
+    else if (reference.dataType === "STRING" && !reference.value?.trim()) issues.push({ level: "error", message: `参考 ${match[1]} 的文本为空` });
   }
-  if (choice.mode?.length && !matchingModes.value.length) throw new Error("当前模型没有适合这些参考素材的生成模式，请更换模型或调整引用");
+  if (selectedModel.value?.mode?.length && (!matchingModes.value.length || !matchingModes.value.some(mode => JSON.stringify(mode) === data.value.mode))) issues.push({ level: "error", message: "当前模型或引用不支持所选生成模式" });
+  if (data.value.firstFrameBinding) check(() => validateFirstFrame(data.value.firstFrameBinding!));
+  if (data.value.continuityNeedsReview) issues.push({ level: "error", message: "此节点来自恢复版本，请重新核对并绑定首帧或衔接参考" });
+  if (data.value.continuityReferenceBinding) {
+    const binding = { ...data.value.continuityReferenceBinding };
+    check(() => {
+      const index = validateContinuityReference(binding);
+      if (!input?.prompt.includes(`{{ref ${index}}}`)) throw new Error("提示词未引用衔接参考，请明确标注上一段尾帧");
+    });
+    try {
+      const before = JSON.stringify(data.value.continuityReferenceBinding);
+      if (await continuityFileHash(binding.path) !== binding.sha256) throw new Error("衔接参考文件已变化，请重新绑定");
+      signal?.throwIfAborted();
+      if (disposed || JSON.stringify(data.value.continuityReferenceBinding) !== before) throw new Error("衔接参考或画布已变化，请重新检查");
+      validateContinuityReference(binding);
+    } catch (error) { issues.push({ level: "error", message: error instanceof Error ? error.message : String(error) }); }
+  }
+  if (!mediaCounts.value.image) issues.push({ level: "warning", message: "没有参考图片，人物和场景一致性需自行检查" });
+  if (selectedModel.value) {
+    const durations = getDurations(selectedModel.value);
+    if (durations.length && !durations.includes(data.value.duration!)) issues.push({ level: "error", message: "当前模型不支持所选时长" });
+    const resolutions = getResolutions(selectedModel.value, data.value.duration);
+    if (resolutions.length && !resolutions.includes(data.value.resolution)) issues.push({ level: "error", message: "当前时长不支持所选分辨率" });
+  }
+  issues.push(...await inspectReferenceFiles(files.getWorkspaceFiles(), refList.value.flatMap(item => typeof item.value === "object" && item.value && "url" in item.value ? [item.value.url] : []), signal));
+  return issues;
+});
+
+async function startGeneration() {
+  const before = JSON.stringify({ input: currentGenerationInput(), first: data.value.firstFrameBinding, continuity: data.value.continuityReferenceBinding });
+  await preflight.assertReady();
+  if (disposed || before !== JSON.stringify({ input: currentGenerationInput(), first: data.value.firstFrameBinding, continuity: data.value.continuityReferenceBinding })) throw new Error("生成配置已变化，请重新检查");
+  if (generating.value) throw new Error("视频节点正在处理，请完成后再生成");
+  const input = currentGenerationInput();
+  if (!input) throw new Error("请先选择视频模型");
   const workspace = files.getWorkspaceFiles();
   const controller = new AbortController();
   const attemptId = crypto.randomUUID();
@@ -681,12 +705,17 @@ nodeTools.register({
   async execute({ binding }, { signal }) {
     if (generating.value || checkingContinuity.value || deleting.value || uploading.value || extractingFrame.value) throw new Error("节点正在处理，请稍后设置首帧");
     signal?.throwIfAborted();
-    if (!binding) { data.value.firstFrameBinding = undefined; return getConfig(); }
+    if (!binding) {
+      data.value.continuityNeedsReview = false;
+      data.value.firstFrameBinding = undefined;
+      return getConfig();
+    }
     if (data.value.continuityReferenceBinding) throw new Error("请先清除衔接参考绑定");
     await loadModels();
     signal?.throwIfAborted();
     if (generating.value || checkingContinuity.value || data.value.continuityReferenceBinding || deleting.value || uploading.value || extractingFrame.value) throw new Error("节点正在处理或衔接参考已绑定，请重新检查");
     validateFirstFrame(binding, selectedModel.value, false);
+    data.value.continuityNeedsReview = false;
     data.value.firstFrameBinding = binding;
     data.value.mode = JSON.stringify("endFrameOptional");
     return getConfig();
@@ -700,7 +729,11 @@ nodeTools.register({
   async execute({ binding }, { signal }) {
     if (generating.value || checkingContinuity.value || deleting.value || uploading.value || extractingFrame.value) throw new Error("节点正在处理，请稍后设置衔接参考");
     signal?.throwIfAborted();
-    if (!binding) { data.value.continuityReferenceBinding = undefined; return getConfig(); }
+    if (!binding) {
+      data.value.continuityNeedsReview = false;
+      data.value.continuityReferenceBinding = undefined;
+      return getConfig();
+    }
     checkingContinuity.value = true;
     try {
       await loadModels();
@@ -716,6 +749,7 @@ nodeTools.register({
       validateContinuityReference({ ...candidate, sha256 }, selectedModel.value, false);
       const mode = getMatchingModes(selectedModel.value).find(Array.isArray);
       if (!mode) throw new Error("当前模型没有适合全部素材的多参考模式");
+      data.value.continuityNeedsReview = false;
       data.value.continuityReferenceBinding = { ...binding, sha256 };
       data.value.mode = JSON.stringify(mode);
       return getConfig();

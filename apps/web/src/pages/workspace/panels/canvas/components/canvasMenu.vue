@@ -173,7 +173,7 @@ const moveVisible = ref(false);
 let treeRequest = 0;
 const treeEntries = computed(() => {
   const entries: CanvasEntry[] = [];
-  const visibleCanvases = canvases.value.filter(canvas => !canvas.id.split("/").slice(0, -1).some(name => ["assets", ".agent"].includes(name.toLowerCase())));
+  const visibleCanvases = canvases.value.filter(canvas => !canvas.id.split("/").slice(0, -1).some(name => ["assets", ".agent", ".toonflow"].includes(name.toLowerCase())));
   const directories = new Map<string, CanvasEntry & { children: CanvasEntry[] }>();
   for (const folder of folders.value) directories.set(folder.path, { ...folder, children: [] });
   for (const canvas of visibleCanvases) {
@@ -538,7 +538,7 @@ async function listCanvasEntries(directory: string, path = "", recursive = false
   for (let index = 0; index < entries.length; index++) {
     checkCanvasDirectory(directory, signal);
     const entry = entries[index]!;
-    if (entry.type !== "directory" || ["assets", ".agent"].includes(entry.name.toLowerCase())) continue;
+    if (entry.type !== "directory" || ["assets", ".agent", ".toonflow"].includes(entry.name.toLowerCase())) continue;
     const folder: CanvasEntry = { ...entry };
     folders.push(folder);
     if (recursive) {

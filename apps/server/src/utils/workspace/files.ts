@@ -61,7 +61,7 @@ async function hasCanvasFile(path: string, excludedPath?: string): Promise<boole
   if (!info) return false;
   if (info.isDirectory()) {
     for (const entry of await readdir(path, { withFileTypes: true })) {
-      if (entry.isDirectory() && ["assets", ".agent"].includes(entry.name.toLowerCase())) continue;
+      if (entry.isDirectory() && ["assets", ".agent", ".toonflow"].includes(entry.name.toLowerCase())) continue;
       if ((entry.isFile() || entry.isDirectory()) && await hasCanvasFile(resolve(path, entry.name), excludedPath)) return true;
     }
     return false;
@@ -87,7 +87,7 @@ export async function removeWorkspaceFile(directory: string, path: string, recur
   const info = await lstat(path);
   if (info.isDirectory() && !recursive) return rmdir(path);
   directory = await realpath(directory);
-  const ignored = relative(directory, path).split(sep).some(part => ["assets", ".agent"].includes(part.toLowerCase()));
+  const ignored = relative(directory, path).split(sep).some(part => ["assets", ".agent", ".toonflow"].includes(part.toLowerCase()));
   if (ignored || !await hasCanvasFile(path)) return rm(path, { recursive });
   const key = process.platform === "win32" ? directory.toLowerCase() : directory;
   // ACT: 单进程内仅协调画布删除，避免锁根目录影响 Agent 会话及并行素材清理；多进程需共享此锁。
