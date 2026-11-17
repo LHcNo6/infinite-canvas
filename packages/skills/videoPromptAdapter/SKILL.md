@@ -1,10 +1,10 @@
 ---
 name: videoPromptAdapter
-description: 已有视频创作方案或长视频分段表，需要按目标模型版本和参考素材模式整理提示词时使用。保留既定剧情、逐字台词和素材职责，输出每段可提交提示词及单列参数建议；不操作画布或生成媒体。Seedance 2.5 宠物搞笑短片由本技能定稿，其他 Seedance 专用路径遵从对应工作流。
+description: 已有视频创作方案或长视频分段表，需要按目标模型版本和参考素材模式整理提示词时使用。保留既定剧情、逐字台词和素材职责，输出每段可提交提示词及单列参数建议；不操作画布或生成媒体。Seedance 2.5 宠物搞笑及非带货采访短片由本技能定稿，其他 Seedance 专用路径遵从对应工作流。
 metadata:
   locales:
     en: en.md
-  version: "1.1.4"
+  version: "1.1.6"
   displayName: 视频方案转模型提示词
   author: 无限画布
 ---
@@ -32,7 +32,7 @@ metadata:
 | Wan 2.2 | `references/models/wan22/prompting.md` |
 | Wan Animate 2 | `references/models/wanAnimate2/prompting.md` |
 | Seedance 2.0 | `references/models/seedance2/prompting.md` |
-| Seedance 2.5 宠物搞笑短片 | `references/models/seedance25/prompting.md` |
+| Seedance 2.5 宠物搞笑及非带货采访短片 | `references/models/seedance25/prompting.md` |
 | MiniMax H3 | `references/models/minimaxH3/prompting.md` |
 | LTX-2、LTX-2.3、LTX-2.5 | 分别为 `references/models/ltx2/prompting.md`、`references/models/ltx23/prompting.md`、`references/models/ltx25/prompting.md` |
 
@@ -40,7 +40,7 @@ metadata:
 
 第三方规则只负责组织对应模型的 prompt；本技能、调用方和用户的已确认剧情、逐字台词、实际引用及声音、时长、授权和参数约束优先。上游的只输出单行、默认时长、音频或引用标记等要求与上述约束冲突时，保留用户目标和工作流要求，不静默删除台词、引用、镜头或改模型。真实引用由工作流映射，第三方样例中的 `<Picture 1>` 等不能当作已经绑定。
 
-Seedance 2.5 宠物搞笑短片由本技能读取上表第三方专篇并定稿；专篇不可用或不覆盖输入模式时按通用方法定稿并标明未核实。其余 Seedance 2.5 宠物带货短片和长视频由 `petCommercePromptSd25` 定稿，普通 Seedance 2.5 长视频由 `sd25-pe` 定稿；Seedance 2.0 长视频由调用方的 `workflow` PART A 定稿。本技能均不重写这些最终 prompt。模型变化时由调用工作流重新适配受影响段并核对授权。
+Seedance 2.5 宠物搞笑及非带货采访短片由本技能读取上表第三方专篇并定稿；专篇不可用或不覆盖输入模式时按通用方法定稿并标明未核实。采访保留记者、宠物和可选主人各自的逐字台词、画内/画外位置、问答顺序、中段证据及结尾停顿，不改成单人口播或商品展示。其余 Seedance 2.5 宠物带货短片和长视频由 `petCommercePromptSd25` 定稿，普通 Seedance 2.5 长视频由 `sd25-pe` 定稿；Seedance 2.0 长视频由调用方的 `workflow` PART A 定稿。本技能均不重写这些最终 prompt。模型变化时由调用工作流重新适配受影响段并核对授权。
 
 ## 通用方法
 

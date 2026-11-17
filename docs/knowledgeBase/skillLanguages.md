@@ -1,5 +1,7 @@
 # Skill 名称、描述与语言选择
 
+2026-11-17：新增 `petInterviewVideo` 和 `aiPetShortVideoDirector` 1.0.0，中英文入口各保持同一技术名称；`videoPromptAdapter` 更新至 1.1.6，增加 Seedance 2.5 非带货采访。导演方法及采访完整示例保留各自资料语言，不代表已全文翻译；交付语言服从入口及用户要求。导演保留 Balance0014 作者署名和 MIT 许可，安装与验证见[本次变更](changes/petInterviewVideo20261117.md)。
+
 2026-11-17 新增 `petComedyScript` 和 `petComedyVideo` 中英文入口；版本与身份在各自两种语言间一致，按既有语言选择机制加载。验证与限制见[本次变更](changes/petComedyVideo20261117.md)。
 
 2026-11-16：`canvas`、`workflow`、`longVideoWorkflow`、`petShortVideo` 中英文入口同步增加[预检、制作清单和关键版本](productionSafety.md)约定；有结构化工具时，新任务不另建重复 Markdown 台账。参考资料仍按原语言维护。
@@ -46,6 +48,8 @@ MCP 接入技能下载 `/api/mcp/skill` 也按同一请求语言提供独立的�
 | `workflow` | 创意与剧本转视频 | 从创意、小说或剧本制作视频片段，或继续、修改已有项目 |
 | `longVideoWorkflow` | 长视频分段制作与合成 | 超过 30 秒或已有多段视频的续作、修订与合成 |
 | `petShortVideo` | 宠物带货短视频制作（30 秒内） | 实际制作单条宠物带货短片；明确选用时也支持无商品短片 |
+| `petInterviewVideo` | 宠物采访短视频制作 | 采访主题/剧本/分镜/提示词的文字交付，或 30 秒以内的采访画布制作 |
+| `aiPetShortVideoDirector` | AI 宠物短视频导演 | 宠物主题、故事、表演、分镜及素材审阅方法；采访流程的创作依赖，不自行生成媒体 |
 | `petCommercePrompt` | 宠物带货脚本与提示词 | 宠物带货创作，只交付文字 |
 | `petCommercePromptSd25` | 宠物带货脚本与提示词（Seedance 2.5） | Seedance 2.5 宠物带货创作及长视频单段定稿，只交付文字 |
 | `v118workflow` | 小说改编与分集视频制作 | 按集改编、逐阶段确认与分集画布归档 |
