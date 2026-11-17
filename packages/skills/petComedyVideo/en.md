@@ -1,0 +1,28 @@
+---
+name: petComedyVideo
+description: Make a funny video up to 30 seconds in Infinite Canvas using the user's pet image. Plans the story and references and generates one video within authorization. Use petComedyScript for text only and petShortVideo for commerce.
+metadata:
+  version: "1.0.0"
+  displayName: Make a Funny Pet Short (up to 30 seconds)
+  author: Infinite Canvas
+---
+
+# Make a Funny Pet Short
+
+Make one complete comedy video from the user's pet image and idea. Text-only requests use `petComedyScript` without canvas operations. Default to vertical, about 20 seconds and 480p; explicit choices take precedence, with a 30-second maximum. Generate one video, without automatic segmentation or composition.
+
+Ask for interactive or automatic mode unless already selected. Automatic mode requires explicit upfront authorization of goal, duration, aspect ratio, resolution, sound, needed image settings, image and video providers and models or ordered candidates, total call limit including retries, and per-object failed retry limit. Explain that prompts are formed after authorization and cost is unknown if unavailable. Skipping, cancellation or silence is not consent. Plan and execute within scope, count all attempts, and ensure remaining calls cover all initial calls before starting. A retry allowance alone does not authorize regeneration after failure.
+
+Discover `petComedyScript` and `videoPromptAdapter` with `skillOperator(action=list)` and read their actual names and scopes; without it use the actual catalog. Pause dependent steps if unreadable. Supply intent, accessible pet image, duration and actual model capabilities to the creative skill. Finalize with the adapter for the actual model and input mode, including its non-commerce Seedance 2.5 comedy route. A provisional story may precede model selection; finalize before generation. Preserve story, pet identity, sound and actual reference roles without commerce or host templates.
+
+Read the canvas and available node types. Create a text node, pet image-generation node, scene image-generation node and video-generation node without obstructing existing content. Discover real functions and arguments via `getNodeTools`; write story with `node:setText` and prompts with `node:setPrompt`. Do not connect the text node, since connected text appends to prompts. Use the image node upload UI when no import tool exists; never invent an API or edit canvas JSON. Reuse the real supplied or selected pet image; wait for upload when needed and never pretend an inaccessible file is ready. Do not regenerate available output. Enable and connect a scene reference only when the story requires one. Do not create a product node.
+
+Read node configuration and model catalog using the actual `node:getConfig` schema and check video `matchingModes`. Explicitly distinguish a first frame from identity reference. Select a mode accepting the real inputs, set and read back aspect ratio, duration and resolution, and check `durationResolutionMap`; video duration equals the final story duration. If the selected model or mode cannot support necessary references, duration or resolution, preserve the canvas and ask for a supported choice; never silently switch models, shorten the story or drop references. Unknown quality is not unsupported capability; mark it for review. Check actual sound settings; do not silently remove or replace requested sound.
+
+In interactive mode show all intended assets and call counts, models, settings, full prompts, actual or planned node references and their roles, sound and duration before any media generation. State known cost or that compute cost is unknown, and obtain explicit consent. In automatic mode record the same plan and check the initial authorization. Recheck changes to model, assets, settings or prompts and pause if scope or dependencies are unclear or exceeded. Map `{{ref N}}` from real connections and `referenceOrder` before generation; never guess.
+
+Start authorized missing necessary images through actual node tools and record `attemptId` and `startedAt`; use `node:waitGeneration({attemptId})`. When ready, recheck outputs, connections, configuration and references before starting one video and waiting for its terminal state. Running, `waitBudgetExceeded`, cancellation or unknown status is not failure and does not authorize another generation. Query the original attempt before resuming. Old output or idle is not evidence of success. Keep the canvas open; background continuation after closing or switching is not guaranteed.
+
+On explicit failure preserve results and pause dependencies. Offer manual call-history/download recovery or authorization for the Agent to inspect the specific call and attempt one download recovery. Recovery does not regenerate or adopt; ask the user to select “Use result” and verify output. Any new generation needs explicit authorization for the failed object; automatic mode also requires remaining total and per-object allowance and budget for other initial calls. Skipping, cancellation or silence does not authorize action.
+
+When available, run `preflightCanvas` for target nodes before generation, maintain the production checklist with `getProduction`, `updateProduction` and `verifyProduction` using its revision, and create a `createCanvasSnapshot` before bulk overwriting existing content; stop overwriting if it fails. State missing tool limitations. Report the video node and actual path, distinguishing generation, inspection and user adoption; disclose unviewed or unheard content. On resume read the canvas and original attempt first to avoid duplicate nodes or calls.

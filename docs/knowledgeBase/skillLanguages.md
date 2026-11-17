@@ -1,5 +1,7 @@
 # Skill 名称、描述与语言选择
 
+2026-11-17 新增 `petComedyScript` 和 `petComedyVideo` 中英文入口；版本与身份在各自两种语言间一致，按既有语言选择机制加载。验证与限制见[本次变更](changes/petComedyVideo20261117.md)。
+
 2026-11-16：`canvas`、`workflow`、`longVideoWorkflow`、`petShortVideo` 中英文入口同步增加[预检、制作清单和关键版本](productionSafety.md)约定；有结构化工具时，新任务不另建重复 Markdown 台账。参考资料仍按原语言维护。
 
 [返回知识库](readme.md)

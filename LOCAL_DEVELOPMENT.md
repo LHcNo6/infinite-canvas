@@ -1,5 +1,18 @@
 # Toonflow 二次开发工作区
 
+## 本机 Bun
+
+2026-11-17 检查：本机 `/Applications/toonflow.app/Contents/MacOS/bun` 可执行，版本为 1.4.0，但其目录不一定在 Codex 或终端的 `PATH` 中；项目 `package.json` 声明 Bun 1.4.3。先用 `command -v bun` 和 `bun --version` 检查当前环境；找不到时检查应用内二进制，使用前运行其 `--version`，不要假定该应用在其他机器也存在。
+
+需要在本仓库使用当前已验证的运行时时，可在单条命令中设置 PATH，使构建脚本启动的子进程也能找到 Bun：
+
+```sh
+PATH="/Applications/toonflow.app/Contents/MacOS:$PATH" bun --version
+PATH="/Applications/toonflow.app/Contents/MacOS:$PATH" bun run --cwd apps/server build
+```
+
+1.4.0 并非仓库声明的 1.4.3：报告实际版本，若命令依赖版本差异或失败，优先寻找符合声明的已有运行时；不因 PATH 未包含它就断言 Bun 未安装。该路径仅运行应用附带的 Bun，不启动、修改或打包桌面应用。
+
 本仓库基于官方 `v2.0.8` 标签，提交 `af6e884c3d8cda353acaf8ef13aea8ea754a4afd`。本机安装包自报版本 2.0.8；尚未证明该标签构建产物与安装包完全一致。当前分支 `local-development` 的改动尚未提交。
 
 本机下载的 `macos-arm64-toonflow.dmg` SHA-256 为 `f89041dd8e3f23bc0a4591cd6c56ad6cf3bd54e54d0615a01175b7b51eb81daa`，与官方 v2.0.8 发布记录一致。这证明下载文件对应发布资产，不能单独证明当前安装包未被其他修改影响。

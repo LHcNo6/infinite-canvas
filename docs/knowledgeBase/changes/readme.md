@@ -6,6 +6,8 @@
 
 知识库建立于 2026-11-10；此前已有功能的行为和验证见[主题维护](../readme.md#主题维护)。
 
+- 2026-11-17：[宠物搞笑短视频工作流](petComedyVideo20261117.md)
+- 2026-11-17：[本机 Bun 查找与开发服务](localBunDiscovery20261117.md)
 - 2026-11-16：[Agent 生成失败后的恢复选择与授权](agentFailureRecovery20261116.md)
 - 2026-11-16：[Agent 查看生成节点调用记录与重试下载](agentModelCalls20261116.md)
 - 2026-11-16：[安泰信 Seedance Fast 与 Seedream Lite 接入](antaixinByteplusModels20261116.md)

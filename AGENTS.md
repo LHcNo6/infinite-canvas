@@ -4,6 +4,7 @@
 - 所有仓库工作：先阅读并遵守 [开发规范](docs/developmentRules.md)。
 - 开发 Tools、Nodes、Skill 插件及交付发布：阅读 [插件开发指南](docs/pluginDevelopment.md)。
 - 源码运行、构建与桌面打包：阅读 [开发与构建文档](docs/development.md)；本机环境参见 [本地开发说明](LOCAL_DEVELOPMENT.md)。
+- 本机找不到 Bun 时，先按 [本地开发说明](LOCAL_DEVELOPMENT.md#本机-bun) 检查 Toonflow 应用内的 Bun，确认可执行与版本后再判断运行时是否缺失。
 - 功能开发和修复：先查阅[项目知识库](docs/knowledgeBase/readme.md)及相关主题；维护视频尾帧时阅读[视频尾帧维护说明](docs/knowledgeBase/videoLastFrame.md)。
 
 # 功能交付要求
