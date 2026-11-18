@@ -2,18 +2,19 @@
   <panel class="canvasMenuPanel" position="top-left">
     <el-card class="canvasMenu" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
       <div class="menuContent">
-        <el-input v-model="projectNameDraft" class="workspaceNameInput" :style="{ '--workspaceName': JSON.stringify(projectNameDraft || ' ') }" size="small" :title="directory" :disabled="!workspaceStore.project" aria-label="项目名称"
-          @keydown.stop @keydown.enter="saveProjectName" @keydown.esc.prevent="projectNameDraft = workspaceName" @blur="saveProjectName" />
-        <el-dropdown trigger="click" placement="bottom-start" :showArrow="false" @command="switchProject">
+        <el-input v-if="editingProjectName" ref="projectNameInput" v-model="projectNameDraft" class="workspaceNameInput" :style="{ '--workspaceName': JSON.stringify(projectNameDraft || ' ') }" size="small" :title="directory" aria-label="项目名称"
+          @keydown.stop @keydown.enter="finishProjectName" @keydown.esc.prevent="cancelProjectName" @blur="saveProjectName" />
+        <el-dropdown v-else trigger="click" placement="bottom-start" :showArrow="false" @command="handleWorkspaceCommand">
           <el-button class="workspaceTrigger" text :disabled="!workspaceStore.project" aria-label="工作区" :title="directory">
-            <icon-chevron-down :size="14" aria-hidden="true" />
+            <span>{{ workspaceName }}</span><icon-chevron-down :size="14" aria-hidden="true" />
           </el-button>
           <template #dropdown>
             <el-dropdown-menu class="workspaceList">
-              <el-dropdown-item v-for="item in sortedProjects" :key="item.directory" :command="item.directory" :title="item.directory" :disabled="item.directory === directory">
+              <el-dropdown-item v-for="item in sortedProjects" :key="item.directory" :command="{ directory: item.directory }" :title="item.directory" :disabled="item.directory === directory">
                 <span class="workspaceEntry">{{ item.name }}</span>
                 <icon-check v-if="item.directory === directory" :size="16" aria-hidden="true" />
               </el-dropdown-item>
+              <el-dropdown-item divided :command="{ edit: true }"><icon-edit :size="16" aria-hidden="true" />重命名</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -98,7 +99,7 @@ import { locale, translate } from "@toonflow/i18n/vue";
 import { computed, inject, nextTick, onBeforeUnmount, ref, shallowRef, watch, type ShallowRef } from "vue";
 import { Panel, useVueFlow, type FlowExportObject } from "@vue-flow/core";
 import { ElMessage, ElMessageBox, type DropdownInstance, type FilterNodeMethodFunction, type InputInstance, type LoadFunction, type TreeInstance } from "element-plus";
-import { IconVector, IconCheck, IconChevronDown, IconChevronUp, IconChevronRight, IconDots, IconFolder, IconFolderOpen, IconFolderPlus, IconPlus, IconSearch } from "@tabler/icons-vue";
+import { IconVector, IconCheck, IconChevronDown, IconChevronUp, IconChevronRight, IconDots, IconEdit, IconFolder, IconFolderOpen, IconFolderPlus, IconPlus, IconSearch } from "@tabler/icons-vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { getCanvasAssetDirectories, isCanvasFile } from "@/pages/workspace/canvasFile";
@@ -121,15 +122,38 @@ const balanceFormat = computed(() => new Intl.NumberFormat(locale.value, { maxim
 const visibleProviderBalances = computed(() => providerBalances.value.filter(item => item.id !== "tfRouter" || (item.balance && !item.error)));
 const workspaceName = computed(() => workspaceStore.project?.name || translate("未命名工作区"));
 const projectNameDraft = ref("");
+const editingProjectName = ref(false);
+const projectNameInput = ref<InputInstance>();
 watch([() => workspaceStore.project?.directory, workspaceName], () => {
   projectNameDraft.value = workspaceName.value;
 }, { immediate: true });
 
-function saveProjectName(event: Event) {
-  if (event instanceof KeyboardEvent && event.isComposing) return;
+async function editProjectName() {
+  editingProjectName.value = true;
+  await nextTick();
+  projectNameInput.value?.focus();
+  projectNameInput.value?.select();
+}
+
+function handleWorkspaceCommand(command: { directory?: string; edit?: boolean }) {
+  if (command.edit) void editProjectName();
+  else if (command.directory) void switchProject(command.directory);
+}
+
+function finishProjectName(event: Event) {
+  if (!(event instanceof KeyboardEvent) || !event.isComposing) (event.target as HTMLInputElement).blur();
+}
+
+function cancelProjectName(event: Event) {
+  projectNameDraft.value = workspaceName.value;
+  (event.target as HTMLInputElement).blur();
+}
+
+function saveProjectName() {
   const project = workspaceStore.project;
   if (project) workspaceStore.renameProject(project.directory, projectNameDraft.value);
   projectNameDraft.value = workspaceName.value;
+  editingProjectName.value = false;
 }
 
 type Canvas = { id: string; name: string; flow?: Pick<FlowExportObject, "nodes" | "edges" | "viewport"> };
@@ -988,19 +1012,13 @@ defineExpose({ getCanvases, peekCanvases, initialized, addCanvas, switchCanvas, 
       }
     }
 
-    .canvasTrigger {
+    .canvasTrigger, .workspaceTrigger {
       min-width: 0;
       height: 28px;
       padding: 0 3px;
       font-size: 13px;
       :deep(> span) { display: flex; align-items: center; gap: 4px; min-width: 0; }
       span { min-width: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
-    }
-
-    .workspaceTrigger {
-      width: 20px;
-      height: 28px;
-      padding: 0;
     }
 
   }
